@@ -1,8 +1,8 @@
-from instascrapper import scrape_Instagram
-from youtubescrapper import get_video_details
-from webpagescrapper import scrape_webpage
+from src.instascrapper import scrape_Instagram
+from src.youtubescrapper import get_video_details
+from src.webpagescrapper import scrape_webpage
 import asyncio
-from kgraph import create_kg
+from src.kgraph import create_kg
 
 
 # step1: scrape Instagram profile and save posts and reels to JSON
@@ -35,13 +35,29 @@ docker run -d \
   cr.weaviate.io/semitechnologies/weaviate:1.24.2
 
 """
+# file_paths = [
+#     "/home/drovco/SentinelKG/SarposhFoods/instagram.json",
+#     "/home/drovco/SentinelKG/SarposhFoods/videos.json",
+#     "/home/drovco/SentinelKG/SarposhFoods/crawl_output.txt",
+#     "/home/drovco/kg-data/ColPali-demo/2307.09288.pdf"
+
+# ]
 
 file_paths = [
-    "/home/drovco/kg-data/clost_kg/SarposhFoods/instagram.json",
-    "/home/drovco/kg-data/clost_kg/SarposhFoods/videos.json",
-    "/home/drovco/kg-data/clost_kg/SarposhFoods/crawl_output.txt",
-    "/home/drovco/kg-data/ColPali-demo/2307.09288.pdf"
-
+    "/app/SarposhFoods/instagram.json",
+    "/app/SarposhFoods/videos.json",
+    "/app/SarposhFoods/crawl_output.txt",
+   # "/app/SarposhFoods/2307.09288.pdf",
 ]
 
-print(create_kg(file_paths))
+def call_create_kg():
+    return create_kg(file_paths)
+
+
+# docker compose up --build
+# docker compose up -d --build
+# curl -N "http://localhost:8000/stream?query=hello&bot=agni&top_k=5&session_id=test123"
+#docker image prune --all -f
+#sudo docker rm -f $(sudo docker ps -aq)
+# sudo docker ps -a
+###CORRECT ONE= sudo docker compose down --rmi all --volumes --remove-orphans
