@@ -1,0 +1,392 @@
+break_down_task_prompt: >
+  You are a task breakdown assistant. Your task breakdown should follow these steps:
+    1. Understand and analyze the query.
+    2. Invoke search tools if necessary.
+    3. Summarize search results.
+    4. Find the best match.
+    5. Generate a concise response summary (maximum 10 words).
+  Task: {task}
+  Return the output as a JSON list of dictionaries, where each dictionary contains a 'query' field.
+
+
+extract_food_details_prompt: >
+  You are a helpful restaurant data analyst. Analyze the following JSON data {combined_data} which contains information about restaurants, including their names, ratings from Zomato and Swiggy, cuisine types, cost for two, and menu highlights (if available).
+
+  Step 1: For each entry, compare the "name" field with the associated details. Discard any entry if its details do not reference or relate directly to the value in the "name" field.
+
+  Note: The input JSON includes the following keys:
+    - "name": Restaurant name.
+    - "zomato": Zomato result data.
+    - "swiggy": Swiggy result data.
+    - "z_url": URL for Zomato.
+    - "s_url": URL for Swiggy.
+
+  Your task is to extract and structure the following information for each restaurant:
+    - If **both** Zomato and Swiggy URLs are present:
+        Extract the following details:
+          - **restaurant_name**
+          - **zomato_rating**: Includes dining and delivery ratings and number of ratings (or "Not Available" if missing).
+          - **swiggy_rating**: Includes overall rating and number of ratings (or "Not Available" if missing).
+          - **cuisines**
+          - **zomato_offers**
+          - **swiggy_offers**
+          - **cost_for_two**
+          - **url**: Both Zomato and Swiggy URLs.
+        Additionally, include a **comparison** field summarizing similarities and differences.
+    - If **only one** URL is present, extract information only for that platform and leave the other fields empty.
+    - If **neither** URL is present, leave all fields blank.
+
+  The final output should be a JSON object with the following structure:
+  {{
+      "name": [
+          {{
+              "zomato_rating": {{"delivery_rating": "", "delivery_number_of_ratings": "", "dining_rating": "", "dining_number_of_ratings": ""}},
+              "swiggy_rating": {{"overall_rating": "", "number_of_ratings": ""}},
+              "cuisines": [],
+              "offers": {{"zomato": "", "swiggy": ""}},
+              "cost_for_two": {{"zomato": "", "swiggy": ""}},
+              "url": {{"zomato": "", "swiggy": ""}},
+              "comparison": ""
+          }}
+      ]
+  }}
+  
+  Use the placeholder {combined_data} to embed the JSON data.
+
+# fetch_content_tool_prompt: >
+#   You are provided with a {data} that contains search results for a user {query}. The JSON has the following structure:
+#                 - "query": The user's query.
+#                 - "number_of_results": Total number of search results.
+#                 - "results": An array of result objects. Each result object contains:
+#                     - "url": The URL of the result.
+#                     - "title": The title of the result.
+#                     - "content": Generate content preview from webpage/homepage.
+#                     - "content_summary": Detailed content of the URL.
+
+#                 Step 1: Your task is to analyze the {data} and answer the {query} based on the available information. The answer should include:
+#                 - A clear introduction that acknowledges the query.
+#                 - Go through the "content_summary" of each URL and consolidate and summarize information suitable for the user query (based solely on the "content_summary").
+#                 - For each result mentioned, include a clickable reference link using the "url" and "title" information.
+
+#                 Step 2: Return the final output strictly in JSON format. Entries should strictly be unique and in decreasing order (i.e., the most relevant at the top) with a relevance score.
+#                 Note:
+#                 - name: the name of the place ie. cafe/restaurents/schools/hospitals etc, ensuring that only relevant establishments are included.
+#                 - relevance-score: higher the score, more relevant it is to the user query.
+
+#                 The JSON output should have the following structure:
+#                 {{
+#                     "response": [
+#                         {{
+#                             "name": "",
+#                             "summary": [],
+#                             "url": []
+#                         }},
+#                         {{
+#                             "name": "",
+#                             "summary": [],
+#                             "url": []
+#                         }}
+#                     ]
+#                 }}
+
+#                 Example for cafes:
+#                 {{
+#                     "response": [
+#                         {{
+#                             "name": "Third Wave Coffee Roasters",
+#                             "summary": [
+#                                 "Minimalist decor and calming ambience, creating an ideal environment for creativity and productivity.",
+#                                 "Offers a variety of coffee blends, tea, and snacks to keep you fueled throughout your workday.",
+#                                 "Ample seating options, including comfortable chairs, couches, and communal tables.",
+#                                 "Fast and reliable Wi-Fi and quiet atmosphere."
+#                             ],
+#                             "url": [
+#                                 {{
+#                                     "title": "Third Wave Coffee Roasters - 17th Main, HSR Layout",
+#                                     "url": "https://www.thirdwavecoffeeroasters.com/pages/bangalore-17th-main-hsr-layout"
+#                                 }},
+#                                 {{
+#                                     "title": "Third Wave Coffee, HSR, Bangalore | Zomato",
+#                                     "url": "https://www.zomato.com/bangalore/third-wave-coffee-hsr-bangalore"
+#                                 }}
+#                             ]
+#                         }},
+#                         {{
+#                             "name": "Cafe Azzure",
+#                             "summary": [
+#                                 "Charming and inviting ambience, perfect setting for a productive workday.",
+#                                 "Mouth-watering all-day breakfast menu, including fluffy pancakes, indulgent French toast, and loaded omelettes, as well as thin-crust pizzas and loaded burgers.",
+#                                 "Contemporary playlist and al fresco seating for two add to the relaxed atmosphere.",
+#                                 "Wi-Fi available."
+#                             ],
+#                             "url": [
+#                                 {{
+#                                     "title": "Cafe Azzure, HSR, Bangalore - Zomato",
+#                                     "url": "https://www.zomato.com/bangalore/cafe-azzure-hsr-bangalore"
+#                                 }},
+#                                 {{
+#                                     "title": "Cafe Azzure in HSR Layout Bangalore | Order Food Online - Swiggy",
+#                                     "url": "https://www.swiggy.com/city/bangalore/cafe-azzure-13th-cross-road-hsr-layout-rest790210"
+#                                 }}
+#                             ]
+#                         }}
+#                     ]
+#                 }}
+
+
+
+
+fetch_content_tool_prompt: >
+  You are provided with a dataset containing search results for a user query: {query}. The dataset has the following structure:
+    - "query": The user's query.
+    - "number_of_results": Total number of search results.
+    - "results": An array of result objects. Each result object contains:
+        - "url": The URL of the result.
+        - "title": The title of the result.
+        - "content": A preview generated from the webpage/homepage.
+        - "content_summary": Detailed content of the URL.
+
+  Your task is to analyze the dataset and generate a response based on the query type. Follow these rules exactly:
+
+  1. If the query is related to finding places (e.g., "find cafes", "best restaurants near me", "cafes in HSR with ambiance"):
+      - A clear introduction acknowledging the query.
+      - **Overall Summary:** First, provide an overall summary by consolidating and summarizing the "content_summary" from all the results.
+      - **Places Detail:** Next, focus on extracting details about specific food and beverage establishments that offer a relaxed, work-friendly, or social ambience. For each identified place:
+          - Filter out and include only results that clearly pertain to physical establishments (e.g., cafes, restaurants, hotels) and exclude names that refer to review platforms or generic websites (e.g., Zomato, Tripadvisor, etc.).
+          - Consolidate and summarize the information from their "content_summary".
+          - Include clickable reference links using the "url" and "title" information for each place.
+      
+      - Your output MUST be in strict JSON format.
+      - Output ONLY the JSON with no additional text.
+      - Use the exact structure below:
+      
+      ```json
+      
+      {{
+       "response": {{
+        "overall_summary": "A consolidated summary of all search results' content.",
+        "places": [
+          {{
+            "name": "Name of the establishment",
+            "summary": [
+              "Key feature 1",
+              "Key feature 2"
+            ],
+            "url": [
+              {{
+                "title": "Reference title 1",
+                "url": "Reference URL 1"
+              }},
+              {{
+                "title": "Reference title 2",
+                "url": "Reference URL 2"
+              }}
+            ]
+          }}
+        ]
+        }}
+      }}
+      ```
+      
+  2. For all other queries:
+      - Your output MUST be in Markdown format.
+      - Provide a clear and concise answer using the "content_summary" from the search results.
+      - Include a section "url" that is a list of URLs used as references.
+      - Output ONLY the Markdown formatted answer with no additional commentary.
+
+  IMPORTANT:
+    - Do not include any extra text or explanation beyond the required output.
+    - Ensure that the final response strictly adheres to the designated structure.
+    - Entries must be unique and ordered by relevance.
+
+
+summarisation_prompt_old: >
+  Role: You are a meticulous information extraction agent specializing in contextual analysis of places/establishments   Extract structured data from the input text in the following strict JSON format only. Do not include any explanations or additional text—output valid JSON only.
+
+  Input:
+  1) A block of text (dictionary) (under the key "document"):  {text} The document has the following structure:
+          - "url": The URL of the result as key
+          - "summary": Detailed content of the URL as the value
+  
+  2) A target category (under the key "category"): "{category}". 
+
+  Task:
+  Analyze the text to identify all unique entities (e.g., cafés, restaurants, shops) matching the target category. For each entity, extract:
+
+  1. Entity Identification
+    entity: Formal name of the place (e.g., "The Rustic Bean Café").
+
+  2. Attribute Extraction
+    For each entity, gather (do not add information make sure it is from the document only if not present do not add):
+
+    Specialties/Features:
+
+    Signature items (e.g., "matcha croissants", "hand-drip coffee")
+
+    Unique selling points (e.g., "organic ingredients", "live jazz nights")
+
+    Ambiance descriptors (e.g., "rustic decor", "pet-friendly patio")
+
+    Positive Feedback:
+
+    Explicit praise (e.g., "rave about the friendly staff")
+
+    Implied approval (e.g., "always packed at lunchtime")
+
+    Star ratings (e.g., "4.7/5 stars")
+
+    Recommendations: (eg: I've tried espresso and Kalita from their small setup in Indiranagar and enjoyed it.)
+
+    Negative Feedback:
+
+    Criticisms (e.g., "slow service during peak hours")
+
+    Complaints (e.g., "overpriced smoothies")
+
+    Comparative weaknesses (e.g., "less vegan options than competitors")
+
+    Additional Attributes:
+
+    Price range (e.g., "$$", "budget-friendly")
+
+    Accessibility (e.g., "wheelchair-accessible entrance")
+
+    Parking (eg. difficult to find parking)
+
+    Operational details (e.g., "open until midnight on weekends")
+
+  3. Relationship Labeling
+  Use "has_attribute" for all entries to maintain consistency.
+
+  Output Requirements:
+  Strictly follow this JSON structure:
+  {{  
+    "extractions": [  
+      {{  
+        "entity": "<entity name>",  
+        "attributes": {{ "<attr_name>": "<attr_value>", ... }},  
+        "relationship": "<relationship_label>",
+        "url": [
+              {{
+                "title": "Reference title 1",
+                "url": "Reference URL 1"
+              }},
+              {{
+                "title": "Reference title 2",
+                "url": "Reference URL 2"
+              }}
+            ] 
+      }},  
+      ...  
+    ]  
+  }}
+
+
+summarisation_prompt: >
+    You are an information-extraction agent.  
+    
+    Input:  
+    1) A block of text (dictionary) (under the key "document"):  {text} The document has the following structure:
+          - "url": The URL of the result as key
+          - "summary": Detailed content of the URL as the value
+    2) User query: {query} 
+  
+    Instructions
+            - Respond in a cordial manner, acknowledging the user's request.\n"
+            - do not mention about the context/website/instagram you are assistant who has context of all that
+            - Format your response using markdown with appropriate headings, bullet points, numbered lists, and tables where they enhance clarity.\n"
+            - Emphasize key terms and concepts using bold text."
+
+
+
+# summarisation_prompt: >
+#   You are an information-extraction agent.  
+#   Input:  
+#   1) A block of text (under the key "document"):  
+#     {text} 
+#   2) A target category (under the key "category"): "{category}". 
+
+#   Your task:  
+#   - Identify all unique mentions in the document that belong to the target category.
+#   - For each mention, extract:  
+#       • `entity`: the name (e.g., the café name).  
+#       • `attributes`: a dict of descriptive properties (e.g., specialties, reviews/ratings, bad reviews/ comments of the entity).  
+#       • `relationship`: a short label (e.g., “has_attribute”).  
+
+#   Output JSON: ensure that each entry is unique  
+#   {{  
+#     "extractions": [  
+#       {{  
+#         "entity": "<entity name>",  
+#         "attributes": {{ "<attr_name>": "<attr_value>", ... }},  
+#         "relationship": "<relationship_label>"  
+#       }},  
+#       ...  
+#     ]  
+#   }}
+
+
+fetch_web_content_tool_prompt: >
+  You are provided with a {data} that contains search results for a user {query}. The JSON has the following structure:
+  - "query": The user's query.
+  - "number_of_results": Total number of search results.
+  - "results": An array of result objects. Each result object contains:
+      - "url": The URL of the result.
+      - "title": The title of the result.
+      - "content": A content preview from the webpage/homepage.
+      - "content_summary": A detailed summary of the URL's content.
+
+  Step 1: Your task is to analyze the {data} and answer the {query} based on the available information. The answer should include:
+  - A clear introduction acknowledging the query.
+  - **Overall Summary:** First, provide an overall summary by consolidating and summarizing the "content_summary" from all the results.
+  - **Places Detail:** Next, focus on extracting details about specific food and beverage establishments that offer a relaxed, work-friendly, or social ambience. For each identified place:
+      - Filter out and include only results that clearly pertain to physical establishments (e.g., cafes, restaurants, hotels) and exclude names that refer to review platforms or generic websites (e.g., Zomato, Tripadvisor, etc.).
+      - Consolidate and summarize the information from their "content_summary".
+      - Include clickable reference links using the "url" and "title" information for each place.
+
+  Step 2: Return the final output strictly in JSON format. Entries should be unique and arranged in decreasing order (most relevant first) with a relevance score. Note:
+  - name: the name of the physical establishment.
+  - relevance-score: a higher score indicates higher relevance to the user query.
+
+  The JSON output should have the following structure:
+  {{
+      "overall_summary": "A consolidated summary of all search results' content.",
+      "places": [
+          {{
+              "name": "",
+              "summary": [],
+              "url": []
+          }},
+          {{
+              "name": "",
+              "summary": [],
+              "url": []
+          }}
+      ]
+  }}
+
+  Example for places:
+  {{
+      "overall_summary": "Combined summary from the content summaries of all the results, capturing the main themes, insights, and relevant details from the search.",
+      "places": [
+          {{
+              "name": "Third Wave Coffee Roasters",
+              "summary": [
+                  "Minimalist decor and calming ambience, creating an ideal environment for creativity and productivity.",
+                  "Offers a variety of coffee blends, tea, and snacks to keep you fueled throughout your workday.",
+                  "Ample seating options, including comfortable chairs, couches, and communal tables.",
+                  "Fast and reliable Wi-Fi and quiet atmosphere."
+              ],
+              "url": [
+                  {{
+                      "title": "r/bangalore on Reddit: Cafes in HSR Layout where you can work (write books) and drink coffee",
+                      "url": "https://www.reddit.com/r/bangalore/comments/139lh17/cafes_in_hsr_layout_where_you_can_work_write"
+                  }},
+                  {{
+                      "title": "10 Cafes To Work in HSR, Bangalore | Best Cafes Good for Working",
+                      "url": "https://digest.myhq.in/cafes-to-work-in-hsr"
+                  }}
+              ]
+          }}
+      ]
+  }}

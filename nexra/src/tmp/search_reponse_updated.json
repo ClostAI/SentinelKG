@@ -1,0 +1,187 @@
+{
+    "query": "weather in Bangalore",
+    "number_of_results": 18,
+    "results": [
+        {
+            "title": "Bangalore Weather: IMD Warns of Rainfall, Issues Yellow Alert-Check ...",
+            "snippet": "1 day ago \u00b7 bangalore weather forecast bangalore weather weather in bangalore bangalore news bangalore news today Shivya Kanojia author Shivya is a journalist with a passion for covering stories, possessing a keen eye for detail and a dedication to ethical reporting.",
+            "link": "https://www.timesnownews.com/bengaluru/bangalore-weather-forecast-imd-warns-of-rainfall-issues-yellow-alert-check-full-forecast-article-151460375",
+            "category": "general",
+            "engines": [
+                "bing",
+                "google"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Bangalore local weather (live): today, hourly weather",
+            "snippet": "1 day ago \u00b7 The weather today in Bangalore will be very hot with temperatures reaching 36 \u00b0 C. During the evening and night time the temperatures will drop to 26 \u00b0 C . For deep dive information check out our hourly weather forecast for today down the page.",
+            "link": "https://www.weather25.com/asia/india/karnataka/bangalore?page=today",
+            "category": "general",
+            "engines": [
+                "bing"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Bengaluru, Karnataka, India Weather Forecast | AccuWeather",
+            "snippet": "Bengaluru, Karnataka, India Weather Forecast, with current conditions, wind, air quality, and what to expect for the next 3 days.",
+            "link": "https://www.accuweather.com/en/in/bengaluru/204108/weather-forecast/204108",
+            "category": "general",
+            "engines": [
+                "bing"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Bengaluru, India Weather Conditions | Weather Underground",
+            "snippet": "Get the current and forecast weather for Bengaluru, Karnataka, India, including temperature, precipitation, air quality, and UV index. See radar, satellite, and historical data for the next 10 days.",
+            "link": "https://www.wunderground.com/weather/in/bengaluru",
+            "category": "general",
+            "engines": [
+                "bing"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Real-Time Bangalore Weather Conditions & Forecast | Temperature, Humidity",
+            "snippet": "2 days ago \u00b7 Current Bangalore weather condition is Partly cloudy with real-time temperature (32\u00b0C), humidity 56%, wind 6.5km/h, pressure (1014mb), UV (9.8), visibility (8km) in Karnataka.",
+            "link": "https://www.aqi.in/weather/india/karnataka/bangalore",
+            "category": "general",
+            "engines": [
+                "bing"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Real-Time Bangalore Weather Conditions & Forecast - AQI",
+            "snippet": "5 days ago \u2014 Current Bangalore weather condition is Sunny with real-time temperature (33\u00b0C), humidity 36%, wind 24.5km/h, pressure (1014mb), UV (7.8), visibility (8km) ...",
+            "link": "https://www.aqi.in/weather/in/india/karnataka/bangalore",
+            "category": "general",
+            "engines": [
+                "google"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Bangalore - BBC Weather",
+            "snippet": "Apr 19, 2011 \u00b7 14-day weather forecast for Bangalore.",
+            "link": "https://www.bbc.com/weather/1277333",
+            "category": "general",
+            "engines": [
+                "bing"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Bengaluru-City",
+            "snippet": "2 hours ago \u2014 7 Day's Forecast. Date, Min Temp, Max Temp, Weather. 22-Apr, 22.0, 34.0, Partly cloudy sky. 23-Apr, 23.0, 33.0, Partly cloudy sky.",
+            "link": "https://city.imd.gov.in/citywx/city_weather.php?id=43295",
+            "category": "general",
+            "engines": [
+                "google"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Bengaluru, Karnataka, India Current Weather | AccuWeather",
+            "snippet": "Check current conditions in Bengaluru, Karnataka, India with radar, hourly, and more.",
+            "link": "https://www.accuweather.com/en/in/bengaluru/204108/current-weather/204108",
+            "category": "general",
+            "engines": [
+                "bing"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Bengaluru Weather today: Sunny and warm day with clear ...",
+            "snippet": "6 days ago \u2014 Bengaluru residents woke up to sunny, warm weather today. Temperatures reached a high of 34.3\u00b0C and a low of 24\u00b0C. Clear skies and a minimal chance of rain ( ...",
+            "link": "https://m.economictimes.com/news/weather/bangalore-weather-update-warm-sunshine-and-clear-skies-perfect-for-outdoor-activities/articleshow/120325894.cms",
+            "category": "general",
+            "engines": [
+                "google"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "'Peak Bangalore Weather': City Expects More Rain Ahead",
+            "snippet": "2 days ago \u2014 On April 18, the minimum temperature will be 23 degrees Celsius and the maximum 32 degrees Celsius. The sky will be partly cloudy with one or two spells of rain ...",
+            "link": "https://www.timesnownews.com/bengaluru/weather-in-bangalore-today-imd-predicts-more-rain-rcb-fans-disappointed-after-rain-lashed-in-chinnaswamy-stadium-on-may-18-check-imd-weather-forecast-article-151451228",
+            "category": "general",
+            "engines": [
+                "google"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Weather in Bengaluru, Karnataka, India - timeanddate.com",
+            "snippet": "Yesterday's weather. Passing clouds. 88 / 75 \u00b0F Humidity: 77%. Wind: 3 mph \u2191 from Southwest. More weather last week",
+            "link": "https://www.timeanddate.com/weather/india/bangalore",
+            "category": "general",
+            "engines": [
+                "bing"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Hour-by-Hour Forecast for Bengaluru, Karnataka, India",
+            "snippet": "1 day ago \u2014 Hour-by-hour Forecast in Bengaluru \u2014 Graph ... Partly cloudy. Feels Like: 90 \u00b0F. Humidity: 31%. Precipitation: Rain: ...",
+            "link": "https://www.timeanddate.com/weather/india/bengaluru/hourly",
+            "category": "general",
+            "engines": [
+                "google"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Bangalore Weather. 14 Day Forecast - WorldWeatherOnline.com",
+            "snippet": "Bangalore, India weather forecasted for the next 10 days will have maximum temperature of 37\u00b0c / 99\u00b0f on Sat 26. Min temperature will be 23\u00b0c / 73\u00b0f on Wed 23. Most precipitation falling will be 0.84 mm / 0.03 inch on Sat 19. Windiest day is expected to see wind of up to 26 kmph / 16 mph on Fri 25. Loading UV Index ... Partly Clo... Patchy rai...",
+            "link": "https://www.worldweatheronline.com/en-in/bangalore-weather/karnataka/in.aspx",
+            "category": "general",
+            "engines": [
+                "bing"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Sunny Weather Today 2025-03-19 for Bangalore: March ...",
+            "snippet": "19 Mar 2025 \u2014 Bangalore Weather Today: Sunny days ahead with no rain expected \u00b7 Temperatures slightly dipping with a high of 33.5\u00b0C and a low of 20.8\u00b0C. \u00b7 An average humidity ...",
+            "link": "https://timesofindia.indiatimes.com/city/bengaluru/sunny-weather-forecast-for-bangalore-march-18-24-2025/articleshow/119180162.cms",
+            "category": "general",
+            "engines": [
+                "google"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Bangalore Weather and AQI Today: Warm start at 21.36 \u00b0C, ...",
+            "snippet": "26 Mar 2025 \u2014 The temperature in Bangalore today, on March 26, 2025, is 30.55 \u00b0C. The day's forecast indicates a minimum and maximum temperature of 21.36 \u00b0C and 32.9 \u00b0C, ...",
+            "link": "https://www.hindustantimes.com/cities/bengaluru-news/bangalore-weather-today-aqi-and-rain-forecast-updates-march-26-2025-101742952605642.html",
+            "category": "general",
+            "engines": [
+                "google"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Weather today - Bengaluru, India",
+            "snippet": "4 days ago \u00b7 Today, in Bengaluru, primarily cloud-filled and occasionally clear weather is predicted. The temperature will vary between a minimum of 22\u00b0C and a maximum of 32\u00b0C. The hottest part of the day will be at 2 pm and 3 pm. The temperature is expected to be relatively lower than the average peak in April, which is 35.8\u00b0C.",
+            "link": "https://www.weather-atlas.com/en/india/bengaluru",
+            "category": "general",
+            "engines": [
+                "bing"
+            ],
+            "priority": 5
+        },
+        {
+            "title": "Current weather for Bengaluru",
+            "snippet": "25 Mar 2025 \u2014 Weather forecast for Bengaluru for today, tomorrow, and the coming days. ... Weather Bengaluru. now. 32\u00b0 AQI 120 Moderately polluted. 90 Min. Weather. variable ...",
+            "link": "https://www.weatherandradar.in/weather/bengaluru/7677459",
+            "category": "general",
+            "engines": [
+                "google"
+            ],
+            "priority": 5
+        }
+    ]
+}

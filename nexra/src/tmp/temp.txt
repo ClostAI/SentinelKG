@@ -1,0 +1,135 @@
+The parser should do the following:
+It should use a key to to indicate which tool is the streaming data from.
+The response tool has the following body:
+{
+  "query": "string",
+  "number_of_results": "number",
+  "results": [
+    {
+      "url": "string",
+      "title": "string",
+      "content": "string",
+      "thumbnail": "null or string",
+      "engine": "string",
+      "template": "string",
+      "parsed_url": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "img_src": "string",
+      "priority": "string",
+      "engines": [
+        "string",
+        "..."
+      ],
+      "positions": [
+        "number",
+        "..."
+      ],
+      "score": "number",
+      "category": "string"
+    }
+  ]
+}
+
+It should send "url", "content", "title" in the stream.
+
+The tools content_tool, places_tool, social_tool, looks like this
+
+```json
+{
+  "response": [
+    {
+      "name": "string",
+      "summary": [
+        "string",
+        "..."
+      ],
+      "url": [
+        {
+          "title": "string",
+          "url": "string"
+        }
+      ]
+    },
+    {
+      "name": "string",
+      "summary": [
+        "string",
+        "..."
+      ],
+      "url": [
+        {
+          "title": "string",
+          "url": "string"
+        },
+        {
+          "title": "string",
+          "url": "string"
+        }
+      ],
+      "google_places": {
+        "formatted_address": "string",
+        "formatted_phone_number": "string",
+        "geometry": {
+          "location": {
+            "lat": "number",
+            "lng": "number"
+          },
+          "viewport": {
+            "northeast": {
+              "lat": "number",
+              "lng": "number"
+            },
+            "southwest": {
+              "lat": "number",
+              "lng": "number"
+            }
+          }
+        },
+        "name": "string",
+        "opening_hours": [
+          "string",
+          "..."
+        ],
+        "photos": "string",
+        "price_level": "number",
+        "rating": "number",
+        "photo_urls": [
+          "string",
+          "..."
+        ],
+        "lat": "number",
+        "lon": "number"
+      },
+      "social_links": {
+        "Zomato": [
+          "string",
+          "..."
+        ],
+        "Swiggy": [
+          "string",
+          "..."
+        ],
+        "Instagram": [
+          "string",
+          "..."
+        ],
+        "YouTube": [
+          "string",
+          "..."
+        ]
+      }
+    }
+  ]
+}
+```
+content_tool should send only "name", "summary", "url"
+places_tool should send only "google_places"
+social_tool should send only "social_links"
+
+{"tool": "<tool_name>", "result": <parsed_output>} 
