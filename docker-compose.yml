@@ -1,0 +1,224 @@
+# services:
+#   fastapi:
+#     build: .
+#     ports:
+#       - "8000:8000"
+#     volumes:
+#       - .:/app
+#       - /home/drovco/SentinelKG/SarposhFoods:/app/SarposhFoods:ro
+#     environment:
+#       - SEARXNG_URL=http://searxng:8080
+#       - MONGO_URL=mongodb://mongodb:27017
+#       - WEAVIATE_HOST=weaviate
+#       - WEAVIATE_PORT=8080
+#     depends_on:
+#       - searxng
+#       - mongodb
+#       - weaviate
+#       - weaviate-text
+#       - weaviate-image
+#       - transformers
+#     networks:
+#       - my-network
+
+#   searxng:
+#     image: searxng/searxng:latest
+#     ports:
+#       - "8080:8080"
+#     volumes:
+#       - ./searxng:/etc/searxng:ro
+#     environment:
+#       - BASE_URL=http://localhost:8080
+#     networks:
+#       - my-network
+
+#   mongodb:
+#     image: mongo:latest
+#     ports:
+#       - "27017:27017"
+#     volumes:
+#       - mongodb_data:/data/db
+#     networks:
+#       - my-network
+
+#   weaviate:
+#     image: semitechnologies/weaviate:1.24.8
+#     ports:
+#       - "8085:8085"    
+#       - "50051:50051"  # gRPC
+#     volumes:
+#       - weaviate_data:/var/lib/weaviate
+#     environment:
+#       - QUERY_DEFAULTS_LIMIT=25
+#       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+#       - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+#       - ENABLE_MODULES=text2vec-transformers
+#       - TRANSFORMERS_INFERENCE_API=http://transformers:8080
+#       - CLUSTER_HOSTNAME=node1
+#     networks:
+#       - my-network
+
+#   weaviate-text:
+#     image: cr.weaviate.io/semitechnologies/weaviate:1.24.2
+#     ports:
+#       - "8090:8080"  # Changed from 8080:8080
+#     volumes:
+#       - weaviate_text_data:/var/lib/weaviate
+#     environment:
+#       - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+#       - MAX_VECTOR_DIMENSIONS=768
+#       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+#     networks:
+#       - my-network
+
+#   weaviate-image:
+#     image: cr.weaviate.io/semitechnologies/weaviate:1.24.2
+#     ports:
+#       - "8091:8080"  # Changed from 8081:8080
+#     volumes:
+#       - weaviate_image_data:/var/lib/weaviate
+#     environment:
+#       - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+#       - MAX_VECTOR_DIMENSIONS=1024
+#       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+#     networks:
+#       - my-network
+
+#   transformers:
+#     image: semitechnologies/transformers-inference:sentence-transformers-multi-qa-mpnet-base-cos-v1
+#     environment:
+#       - ENABLE_CUDA=false
+#     networks:
+#       - my-network
+
+#   # caddy:
+#   #   image: caddy:latest
+#   #   ports:
+#   #     - "80:80"
+#   #     - "443:443"
+#   #   volumes:
+#   #     - ./Caddyfile:/etc/caddy/Caddyfile
+#   #     # Optional: to persist Caddy data (certificates, etc.)
+#   #     - caddy_data:/data
+#   #     - caddy_config:/config
+#   #   networks:
+#   #     - my-network
+
+ 
+# volumes:
+#   mongodb_data:
+#   weaviate_data:
+#   weaviate_text_data:  
+#   weaviate_image_data: 
+#   volumes:
+#       - /home/drovco/SentinelKG/SarposhFoods:/app/SarposhFoods:ro
+
+# networks:
+#   my-network:
+#     driver: bridge
+
+
+version: "3.8"
+
+services:
+  fastapi:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /home/drovco/SentinelKG/SarposhFoods:/app/SarposhFoods:ro
+    environment:
+      - SEARXNG_URL=http://searxng:8080
+      - MONGO_URL=mongodb://mongodb:27017
+      - WEAVIATE_HOST=weaviate
+      - WEAVIATE_PORT=8080
+    depends_on:
+      - searxng
+      - mongodb
+      - weaviate
+      - weaviate-text
+      - weaviate-image
+      - transformers
+    networks:
+      - my-network
+
+  searxng:
+    image: searxng/searxng:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./searxng:/etc/searxng:ro
+    environment:
+      - BASE_URL=http://localhost:8080
+    networks:
+      - my-network
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - my-network
+
+  weaviate:
+    image: semitechnologies/weaviate:1.24.8
+    ports:
+      - "8085:8085"
+      - "50051:50051"
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    environment:
+      - QUERY_DEFAULTS_LIMIT=25
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - ENABLE_MODULES=text2vec-transformers
+      - TRANSFORMERS_INFERENCE_API=http://transformers:8080
+      - CLUSTER_HOSTNAME=node1
+    networks:
+      - my-network
+
+  weaviate-text:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.24.2
+    ports:
+      - "8090:8080"
+    volumes:
+      - weaviate_text_data:/var/lib/weaviate
+    environment:
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - MAX_VECTOR_DIMENSIONS=768
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+    networks:
+      - my-network
+
+  weaviate-image:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.24.2
+    ports:
+      - "8091:8080"
+    volumes:
+      - weaviate_image_data:/var/lib/weaviate
+    environment:
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - MAX_VECTOR_DIMENSIONS=1024
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+    networks:
+      - my-network
+
+  transformers:
+    image: semitechnologies/transformers-inference:sentence-transformers-multi-qa-mpnet-base-cos-v1
+    environment:
+      - ENABLE_CUDA=false
+    networks:
+      - my-network
+
+volumes:
+  mongodb_data:
+  weaviate_data:
+  weaviate_text_data:
+  weaviate_image_data:
+
+networks:
+  my-network:
+    driver: bridge
