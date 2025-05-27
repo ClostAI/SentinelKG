@@ -1,0 +1,78 @@
+# Core & Async
+aiofiles==24.1.0
+aiohttp>=3.11.11,<4.0.0
+aiosqlite
+# accelerate==1.7.0
+apify_client==1.10.0
+aiosignal==1.3.2
+anyio>=4.8.0,<5.0.0
+asyncio==3.4.3
+beautifulsoup4
+colorama
+lxml
+
+# Google AI/Cloud
+Crawl4AI==0.6.3
+colpali_engine
+google-genai>=1.7.0
+google-api-core==2.17.1
+google-api-python-client==2.170.0
+google-auth==2.29.0
+googlemaps
+
+# Web/Network
+httpx>=0.28.1,<1.0.0
+httpcore==1.0.5
+websockets>=13.0.0,<15.1.0
+requests==2.31.0
+urllib3==2.2.1
+
+# Data Processing
+numpy==1.26.4
+nest_asyncio
+networkx
+pandas==2.2.1
+pyvis
+pyOpenSSL
+pdf2image
+orjson==3.10.3
+
+# LangChain Ecosystem
+langchain>=0.3.25,<0.4.0
+langchain-core>=0.3.61,<0.4.0
+langchain-community>=0.3.24,<0.4.0
+langchain-text-splitters>=0.3.8,<0.4.0
+langchain-google-genai>=2.1.4
+
+# Pydantic
+pydantic>=2.7.4,<3.0.0
+# pydantic-core==2.18.2
+
+# FastAPI/Web
+fastapi==0.110.2
+uvicorn==0.29.0
+starlette>=0.37.2,<0.38.0
+sse_starlette
+# Utilities
+python-dotenv==1.0.1
+tqdm==4.66.2
+certifi==2024.2.2
+fake-useragent
+
+# Browser Automation
+playwright==1.52.0
+playwright-stealth==1.0.6
+nltk==3.9.1
+# Fixed problem dependencies
+pyparsing==3.1.2
+protobuf==4.25.3
+packaging==23.2
+praw
+transformers>=4.34.0
+huggingface-hub>=0.17.0
+pymongo>=4.4.0,<5.0.0
+sentence-transformers>=2.2.0,<3.0.0
+youtube_transcript_api
+yt_dlp
+weaviate-client  #>=4.2.0
+readability-lxml>=0.8.1,<0.9.0
