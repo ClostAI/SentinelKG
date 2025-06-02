@@ -2,7 +2,7 @@ from src.instascrapper import scrape_Instagram
 from src.youtubescrapper import get_video_details
 from src.webpagescrapper import scrape_webpage
 import asyncio
-from src.kgraph import create_kg
+from src.kgraph import KnowledgeGraphSystem
 
 
 # step1: scrape Instagram profile and save posts and reels to JSON
@@ -47,11 +47,20 @@ file_paths = [
     "/app/SarposhFoods/instagram.json",
     "/app/SarposhFoods/videos.json",
     "/app/SarposhFoods/crawl_output.txt",
-   # "/app/SarposhFoods/2307.09288.pdf",
+    "/app/SarposhFoods/2307.09288.pdf",
+    "/app/SarposhFoods/1687-6180-2014-45.pdf"
 ]
 
-def call_create_kg():
-    return create_kg(file_paths)
+kg_system = KnowledgeGraphSystem()
+def initialize_kg(filepaths):
+    if kg_system.initialize(filepaths):
+        return {"status": "already_initialized"}
+    else:
+        return {"status": "not_initialized", "message": "System initialized with hardcoded paths on startup"}
+
+def query_kg(query):
+    response = kg_system.query(query)
+    return response
 
 
 # docker compose up --build
@@ -61,3 +70,10 @@ def call_create_kg():
 #sudo docker rm -f $(sudo docker ps -aq)
 # sudo docker ps -a
 ###CORRECT ONE= sudo docker compose down --rmi all --volumes --remove-orphans
+
+
+
+#### MCP SERVER ############################
+# export EXCEL_FILES_PATH=/home/drovco/SentinelKG/SarposhFoods
+# export FASTMCP_PORT=8000  # Optional, defaults to 8000
+# uv run excel-mcp-server sse
