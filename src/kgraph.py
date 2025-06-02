@@ -53,6 +53,9 @@ from openai import OpenAI
 from transformers import AutoTokenizer, AutoModel
 from colpali_engine.models import ColQwen2, ColQwen2Processor
 import nltk
+import gc
+import uuid
+import torch
 import weaviate
 import numpy as np
 from weaviate import Client
@@ -127,24 +130,50 @@ def initialize_weaviate() -> tuple[Client, Client]:
     return text_client, image_client
 
 
-def initialize_models():
-    """Load all models with consistent configurations"""
-    global colqwen_model, colqwen_processor, jina_tokenizer, jina_model
+# def initialize_models():
+#     """Load all models with consistent configurations"""
+#     global colqwen_model, colqwen_processor, jina_tokenizer, jina_model
     
-    # Initialize with explicit processor config
+#     # Initialize with explicit processor config
+#     colqwen_processor = ColQwen2Processor.from_pretrained(
+#         "vidore/colqwen2-v1.0",
+#         use_fast=False  # Explicitly handle processor version
+#     )
+    
+#     colqwen_model = ColQwen2.from_pretrained(
+#         "vidore/colqwen2-v1.0",
+#         torch_dtype=torch.bfloat16,
+#         device_map="auto",
+#         trust_remote_code=True
+#     ).eval()
+
+#     # Initialize Jina with proper config
+#     jina_tokenizer = AutoTokenizer.from_pretrained(
+#         "jinaai/jina-embeddings-v2-base-en",
+#         use_fast=True,
+#         trust_remote_code=True
+#     )
+#     jina_model = AutoModel.from_pretrained(
+#         "jinaai/jina-embeddings-v2-base-en",
+#         trust_remote_code=True
+#     ).to(device).eval()
+
+
+def initialize_models():
+    global colqwen_model, colqwen_processor, jina_tokenizer, jina_model
+
     colqwen_processor = ColQwen2Processor.from_pretrained(
         "vidore/colqwen2-v1.0",
-        use_fast=False  # Explicitly handle processor version
+        use_fast=False
     )
     
     colqwen_model = ColQwen2.from_pretrained(
         "vidore/colqwen2-v1.0",
         torch_dtype=torch.bfloat16,
-        device_map="auto",
+        device_map="auto",      # Let accelerate handle device placement
         trust_remote_code=True
     ).eval()
 
-    # Initialize Jina with proper config
     jina_tokenizer = AutoTokenizer.from_pretrained(
         "jinaai/jina-embeddings-v2-base-en",
         use_fast=True,
@@ -153,7 +182,8 @@ def initialize_models():
     jina_model = AutoModel.from_pretrained(
         "jinaai/jina-embeddings-v2-base-en",
         trust_remote_code=True
-    ).to(device).eval()
+    ).to(device).eval()  # It's fine to move this model manually
+
 
 def trim_whitespace(img: Image.Image) -> Image.Image:
     """Remove borders from PDF images"""
@@ -271,6 +301,8 @@ def store_images_in_weaviate(images: List[Image.Image], source: str, client: Cli
                 vector=emb.tolist()
             )
             print(f"Stored image chunk {idx + 1}/{len(images)} from {source}")
+    torch.cuda.empty_cache()
+    gc.collect()
 
 
 def store_text_in_weaviate(text_chunks: List[dict], client: Client):
@@ -309,6 +341,8 @@ def store_text_in_weaviate(text_chunks: List[dict], client: Client):
                 "TextChunk",
                 vector=emb.tolist()
             )
+    torch.cuda.empty_cache()
+    gc.collect()
 
 
 def retrieve_image_top_k(query: str, client: Client, k: int = TOP_K) -> List[Image.Image]:
@@ -478,43 +512,89 @@ def ingestion_pipeline(file_paths, text_client: Client, image_client: Client):
         process_file(file_path, text_client, image_client)
     print("Ingestion completed successfully")
 
-def create_kg(file_paths: List[str]):
-    # Initialize system
-    nltk.download('punkt')
-    print("Initializing models and Weaviate clients...")
-    initialize_models()
-    text_client, image_client = initialize_weaviate()
+# def create_kg(file_paths: List[str], query: str):
+#     # Initialize system
+#     nltk.download('punkt')
+#     print("Initializing models and Weaviate clients...")
+#     initialize_models()
+#     text_client, image_client = initialize_weaviate()
 
-    # Check existing data
-    text_data_exists = check_existing_data(text_client, "TextChunk")
-    print(f"Text data exists: {text_data_exists}")
-    image_data_exists = check_existing_data(image_client, "ImageChunk")
-    print(f"Image data exists: {image_data_exists}")
+#     # Check existing data
+#     text_data_exists = check_existing_data(text_client, "TextChunk")
+#     print(f"Text data exists: {text_data_exists}")
+#     image_data_exists = check_existing_data(image_client, "ImageChunk")
+#     print(f"Image data exists: {image_data_exists}")
 
-    # Only ingest if no data exists
-    if not text_data_exists or not image_data_exists:
-        ingestion_pipeline(file_paths, text_client, image_client)
-    else:
-        print("Using existing data in Weaviate")
-    # Example query
-    query = "Awards won by  Sarposh Foods?"
+#     # Only ingest if no data exists
+#     if not text_data_exists or not image_data_exists:
+#         ingestion_pipeline(file_paths, text_client, image_client)
+#     else:
+#         print("Using existing data in Weaviate")
+#     # Example query
+#    #query = "Awards won by  Sarposh Foods?"
     
-    # Retrieve results
-    top_images = retrieve_image_top_k(query, image_client)
-    top_texts = retrieve_text_top_k(query, text_client)
-    os.makedirs('saved_images', exist_ok=True)
-    for i, img in enumerate(top_images):
-        if isinstance(img, Image.Image):
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
-            img.save(f'saved_images/image_{i+1}.png')
+#     # Retrieve results
+#     top_images = retrieve_image_top_k(query, image_client)
+#     top_texts = retrieve_text_top_k(query, text_client)
+#     os.makedirs('saved_images', exist_ok=True)
+#     for i, img in enumerate(top_images):
+#         if isinstance(img, Image.Image):
+#             if img.mode != 'RGB':
+#                 img = img.convert('RGB')
+#             img.save(f'saved_images/image_{i+1}.png')
+#         else:
+#             if isinstance(img, torch.Tensor):
+#                 img = img.detach().cpu().numpy()
+#             if img.shape[0] in [1, 3]:  # [C, H, W]
+#                 img = np.transpose(img, (1, 2, 0))
+#             img = (img * 255).clip(0, 255).astype(np.uint8)
+#             Image.fromarray(img).save(f'saved_images/image_{i+1}.png')
+    
+#     summary = summarize_with_gpt(query, top_texts, top_images)
+#     return summary
+
+class KnowledgeGraphSystem:
+    def __init__(self):
+        self.initialized = False
+        self.text_client = None
+        self.image_client = None
+
+    def initialize(self, file_paths: List[str]):
+        if self.initialized:
+            return {"status": "already_initialized"}
+        nltk.download('punkt', quiet=True)
+        initialize_models()
+        self.text_client, self.image_client = initialize_weaviate()
+        text_exists = check_existing_data(self.text_client, "TextChunk")
+        image_exists = check_existing_data(self.image_client, "ImageChunk")
+        if not text_exists or not image_exists:
+            ingestion_pipeline(file_paths, self.text_client, self.image_client)
+            print("Data ingestion complete")
         else:
-            if isinstance(img, torch.Tensor):
-                img = img.detach().cpu().numpy()
-            if img.shape[0] in [1, 3]:  # [C, H, W]
-                img = np.transpose(img, (1, 2, 0))
-            img = (img * 255).clip(0, 255).astype(np.uint8)
-            Image.fromarray(img).save(f'saved_images/image_{i+1}.png')
-    
-    summary = summarize_with_gpt(query, top_texts, top_images)
-    return summary
+            print("Using existing Weaviate data")
+        
+        # Create image directory once
+        os.makedirs('saved_images', exist_ok=True)
+        self.initialized = True
+        return {"status": "initialized"}
+
+    def query(self, query: str) -> str:
+        if not self.initialized:
+            return {"error": "System not initialized. Call /initialize first"}
+        
+        top_images = retrieve_image_top_k(query, self.image_client)
+        top_texts = retrieve_text_top_k(query, self.text_client)
+        processed_images = []
+        for img in top_images:
+            if isinstance(img, Image.Image):
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+            else:
+                if isinstance(img, torch.Tensor):
+                    img = img.detach().cpu().numpy()
+                if img.shape[0] in [1, 3]:
+                    img = np.transpose(img, (1, 2, 0))
+                img = (img * 255).clip(0, 255).astype(np.uint8)
+                img = Image.fromarray(img)
+            processed_images.append(img)
+        return summarize_with_gpt(query, top_texts, processed_images)
