@@ -12,9 +12,11 @@ from langchain.memory import ConversationBufferMemory
 from langchain.schema import HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from nexra.src.tools import response_tool
-from runner import call_create_kg
+from runner import initialize_kg, query_kg
 from pymongo import MongoClient
-from pymongo import MongoClient
+from typing import List
+from fastapi import FastAPI, Query, Body
+
 
 load_dotenv()
 os.environ['GOOGLE_API_KEY'] = os.getenv("GEMINI_API_KEY")
@@ -191,7 +193,7 @@ async def query_stream_generator(session_id, user_input, bot,top_k):
     sid, memory = get_session(session_id)
     chat_chain = LLMChain(llm=llm, prompt=chat_prompt, memory=memory)
     hist = format_chat_history(memory.load_memory_variables({})["chat_history"])
-    response = call_create_kg()
+    response = query_kg(user_input)
 #     if bot == "agni":
 #         context = "hi agniiiiii"
 #         print(context)
@@ -288,6 +290,22 @@ async def sse_query(
     session_id: str = Query(None)
 ):
     return EventSourceResponse(query_stream_generator(session_id, query, bot,top_k))
+
+
+@app.get("/initialize")
+async def initialize_system():
+    """
+    Initialize KG system with data files
+    """
+    file_paths = [
+            "/app/SarposhFoods/instagram.json",
+            "/app/SarposhFoods/videos.json",
+            "/app/SarposhFoods/crawl_output.txt",
+            "/app/SarposhFoods/2307.09288.pdf",
+            "/app/SarposhFoods/1687-6180-2014-45.pdf"
+    ]
+    result = initialize_kg(file_paths)
+    return result
 
 
 if __name__ == "__main__":
