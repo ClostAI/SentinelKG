@@ -7,11 +7,13 @@ import logging
 import asyncio
 from bs4 import BeautifulSoup
 import nest_asyncio
+from langchain_core.messages import HumanMessage 
 import networkx as nx
 from pyvis.network import Network
 from dotenv import load_dotenv
 import yaml
-from google import genai
+from google.generativeai import GenerativeModel
+import google.generativeai as genai
 from crawl4ai import AsyncWebCrawler
 from crawl4ai import AsyncWebCrawler,CrawlerRunConfig
 from nexra.src.utils import extract_video_id, fetch_video_details, fetch_transcript
@@ -25,6 +27,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=GEMINI_API_KEY)
 APP_ID = os.getenv("APP_ID")
 APP_SECRET = os.getenv("APP_SECRET")
 REDDIT_USERNAME = os.getenv("REDDIT_USERNAME")
@@ -358,12 +361,16 @@ async def fetch_content_tool(query,  top_k, location):
         logger.error("Error formatting prompt: %s", e)
         return None
     
-    client = genai.Client(api_key=GEMINI_API_KEY)
-    response = client.models.generate_content(
-                model="gemini-2.0-flash", 
-                contents=formatted_prompt)
+    # client = genai.Client(api_key=GEMINI_API_KEY)
+    # response = client.models.generate_content(
+    #             model="gemini-2.0-flash", 
+    #             contents=formatted_prompt)
+    # return response.text
+    model = GenerativeModel("gemini-2.0-flash")
+    response = model.generate_content(formatted_prompt)
     return response.text
-    # print(response.text)
+
+   
     # if isinstance(json_string, list):
     #     json_string = json_string[0]
     # else:
