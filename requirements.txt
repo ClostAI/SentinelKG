@@ -10,11 +10,10 @@ asyncio==3.4.3
 beautifulsoup4
 colorama
 lxml
-
+openpyxl
 # Google AI/Cloud
 Crawl4AI==0.6.3
 colpali_engine
-google-genai>=1.7.0
 google-api-core==2.17.1
 google-api-python-client==2.170.0
 google-auth==2.29.0
@@ -42,7 +41,9 @@ langchain>=0.3.25,<0.4.0
 langchain-core>=0.3.61,<0.4.0
 langchain-community>=0.3.24,<0.4.0
 langchain-text-splitters>=0.3.8,<0.4.0
-langchain-google-genai>=2.1.4
+langchain_google_genai
+google-genai
+
 
 # Pydantic
 pydantic>=2.7.4,<3.0.0
