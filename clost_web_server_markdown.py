@@ -14,6 +14,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from nexra.src.tools import response_tool
 from runner import initialize_kg, query_kg
 from pymongo import MongoClient
+from router_llm import route_query
 from typing import List
 from fastapi import FastAPI, Query, Body
 
@@ -193,74 +194,13 @@ async def query_stream_generator(session_id, user_input, bot,top_k):
     sid, memory = get_session(session_id)
     chat_chain = LLMChain(llm=llm, prompt=chat_prompt, memory=memory)
     hist = format_chat_history(memory.load_memory_variables({})["chat_history"])
-    response = query_kg(user_input)
-#     if bot == "agni":
-#         context = "hi agniiiiii"
-#         print(context)
-#     else:
-#         context = None
-#     # 1. Manager decision
-#     print("++++++++++++++")
-#     print(hist)
-#     print("++++++++++++++")
-#     raw = manager_agent_chain.invoke({"chat_history": hist, "context": context, "query": user_input})
-#     manager_resp = raw["text"]
-#     json_match = re.search(r'\{.*?\}', manager_resp, re.DOTALL)
-#     if json_match:
-#         json_str = json_match.group()
-#         parsed_data = json.loads(json_str)
-#         sig = parsed_data.get("signal")
-#         reasoning = parsed_data.get("reasoning")
-#         search_q = parsed_data.get("query")
-#         loc = parsed_data.get("location")
-#    # sig, search_q, reasoning, followups, loc = parse_manager_response(raw)
-#     if sig in ("USE_KWD"):
-#         # resp = chat_chain.invoke({"chat_history": hist, "context": None, "query": user_input})["text"].strip()
-#         resp = chat_chain.invoke({
-#                     "context": "",
-#                     "query": user_input
-#                 })["text"].strip()
-#     if sig in ("USE_CONTEXT"):
-#         # resp = chat_chain.invoke({"chat_history": hist, "context": context, "query": user_input})["text"].strip()
-#         resp = chat_chain.invoke({
-#                     "context": context,
-#                     "query": user_input
-#                 })["text"].strip()
-#     elif sig == "INVOKE_SEARCH":
-#         resp = await search_tool(search_q, top_k, loc)
-#         resp = resp[0]
-    #yield f"**Answer:**\n\n{resp}\n\n"
+    response = await route_query(user_input)
     message = format_sse(data=response)
     yield message
-   # print(sig, search_q, reasoning, followups, loc)
-
-    # # 2. Convert that parsed JSON → markdown
-    # parsed = {
-    #     "signal": sig,
-    #     "reasoning": reasoning,
-    #     "followups": followups,
-    #     "location": loc,
-    #     "query": search_q or user_input
-    # }
-    # md = markdown_chain.invoke({"json_data": json.dumps(parsed)})["text"]
-    # yield f"{md}\n\n"
-
-    # # 3. Get final answer
-    # if sig in ("USE_CONTEXT", "GREETING"):
-    #     resp = chat_chain.invoke({"chat_history": hist, "query": user_input})["text"].strip()
-    # elif sig == "INVOKE_SEARCH":
-    #     resp = await search_tool(parsed["query"], top_k, loc)
-    # else:
-    #     resp = raw
-
-    # yield f"**Answer:**\n\n{resp}\n\n"
-
-    # # 4. Persist
     chat_memory = memory.chat_memory.messages
     history_to_store = []
     for msg in chat_memory:
         if isinstance(msg, HumanMessage):
-            #print("chat_message",{"role": "human", "content": msg.content} )
             history_to_store.append({"role": "human", "content": msg.content})
         elif isinstance(msg, AIMessage):
             history_to_store.append({"role": "ai", "content": msg.content}) 
