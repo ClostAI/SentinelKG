@@ -297,7 +297,6 @@ async def response_tool(query: str, top_k: int, location: str):
     #url = "http://localhost:8080"
     url = os.getenv("SEARXNG_URL")
     search = SearxSearchWrapper(searx_host=url)
-    
     try:
         raw_results = search.results(
             query=query,
@@ -340,7 +339,6 @@ async def response_tool(query: str, top_k: int, location: str):
             "number_of_results": len(sorted_results),
             "results": sorted_results
         }
-        
         output_path = os.path.join(os.getcwd(), 'nexra/src/tmp/search_reponse.json')
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
