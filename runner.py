@@ -66,6 +66,7 @@ def query_kg(query):
 # docker compose up --build
 # docker compose up -d --build
 # curl -N "http://localhost:8000/stream?query=hello&bot=agni&top_k=5&session_id=test123"
+#wget http://localhost:8000/initialize   ########NOTE THIS TO BE RUN BEFORE KG 
 #docker image prune --all -f
 #sudo docker rm -f $(sudo docker ps -aq)
 # sudo docker ps -a
@@ -75,5 +76,7 @@ def query_kg(query):
 
 #### MCP SERVER ############################
 # export EXCEL_FILES_PATH=/home/drovco/SentinelKG/SarposhFoods
-# export FASTMCP_PORT=8000  # Optional, defaults to 8000
+# export FASTMCP_PORT=3000  # Optional, defaults to 8000
 # uv run excel-mcp-server sse
+#http://drovco.eastus2.cloudapp.azure.com:8080/
+#NEW CMD = python -m excel_mcp_server.src.excel_mcp sse
