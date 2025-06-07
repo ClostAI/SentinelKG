@@ -979,6 +979,7 @@ import uuid
 import re
 import asyncio
 import os
+from langchain_core.messages import HumanMessage, AIMessage
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import logging
@@ -1006,11 +1007,11 @@ OPENAI_API_KEY="sk-proj-Hl9ZS-xJGUq31g3taaOkHboc0dNk4NHy5fopmsp1JlEo79hX1DdjdHB4
 ai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 # File paths
-CAFE_DATA_PATH = os.path.join(os.getcwd(), "SarposhFoods")
+CAFE_DATA_PATH = os.path.join(os.getcwd(), "User")
 os.makedirs(CAFE_DATA_PATH, exist_ok=True)
 RESERVATIONS_FILE = f"{CAFE_DATA_PATH}/reservations.xlsx"
 SALES_FILE = f"{CAFE_DATA_PATH}/sales.xlsx"
-CAFE_NAME = "Sarpoosh Foods"
+CAFE_NAME = os.getenv("NAME")
 
 # Column definitions
 RESERVATIONS_COLUMNS = [
@@ -1610,22 +1611,42 @@ async def execute_tool_call(tool_name: str, arguments: Dict[str, Any]) -> str:
         logger.error(f"Tool execution error: {str(e)}")
         return f"Error executing tool: {str(e)}"
 
-async def unified_tool_router(user_query: str) -> Dict[str, Any]:
+async def unified_tool_router(user_query: str, conversation_history: List) -> Dict[str, Any]:
     """
     Route the incoming user query to the correct tool. Expects the LLM to return
     a JSON object with keys: tool_name, arguments, missing_args.
     """
-    logger.info(f"Routing query: {user_query}")
+    logger.info(f"Routing query: {user_query} with history: {len(conversation_history)} messages")
+    
+    # Build messages including conversation history
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    
+    # Add conversation history
+    for msg in conversation_history:
+        if isinstance(msg, HumanMessage):
+            messages.append({"role": "user", "content": msg.content})
+        elif isinstance(msg, AIMessage):
+            messages.append({"role": "assistant", "content": msg.content})
+    
+    # Add current user query
+    messages.append({"role": "user", "content": user_query})
+    
     try:
         response = await ai_client.chat.completions.create(
             model=OPENAI_MODEL,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_query}
-            ],
+            messages=messages,
             response_format={"type": "json_object"},
             temperature=0.0
         )
+        # response = await ai_client.chat.completions.create(
+        #     model=OPENAI_MODEL,
+        #     messages=[
+        #         {"role": "system", "content": SYSTEM_PROMPT},
+        #         {"role": "user", "content": user_query}
+        #     ],
+        #     response_format={"type": "json_object"},
+        #     temperature=0.0
+        # )
         content = response.choices[0].message.content
         logger.info(f"LLM response: {content}")
 
@@ -1653,11 +1674,11 @@ async def unified_tool_router(user_query: str) -> Dict[str, Any]:
             "missing_args": []
         }
 
-async def query_stream_generator(user_input: str) -> str:
+async def query_stream_generator(user_input: str, conversation_history: List) -> str:
     """
     Accept a user query, route it, handle missing arguments, and execute the tool.
     """
-    route_result = await unified_tool_router(user_input)
+    route_result = await unified_tool_router(user_input, conversation_history)
     tool_name = route_result["tool_name"]
     arguments = route_result["arguments"]
     missing_args = route_result["missing_args"]
@@ -1686,12 +1707,12 @@ def initialize_excel_files():
             logger.info(f"Created file: {config['filepath']} with sheet {config['sheet_name']}")
 
 
-async def route_query(query: str) -> str:
+async def route_query(query: str, conversation_history: List = []) -> str:
     """
     Initialize files and then await the query_stream_generator coroutine.
     """
     initialize_excel_files()
-    return await query_stream_generator(query)
+    return await query_stream_generator(query, conversation_history)
 
 
 # if __name__ == "__main__":

@@ -1,0 +1,35 @@
+# syntax=docker/dockerfile:1
+FROM golang:1.24-bullseye AS bridge-builder
+WORKDIR /bridge
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      gcc pkg-config libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
+ENV CGO_ENABLED=1
+COPY whatsapp-bridge/go.mod whatsapp-bridge/go.sum ./
+RUN go mod download
+COPY whatsapp-bridge/ .
+RUN go build -o /usr/local/bin/whatsapp-bridge main.go
+
+FROM python:3.12-slim AS mcp-builder
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      curl gcc libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
+ENV PIP_DEFAULT_TIMEOUT=300
+COPY whatsapp-mcp-server/requirements.txt .
+RUN python -m venv .venv \
+    && .venv/bin/python -m pip install --upgrade pip setuptools wheel \
+    && .venv/bin/python -m pip install --no-cache-dir -r requirements.txt
+COPY whatsapp-mcp-server/ .
+
+FROM python:3.12-slim AS runtime
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      sqlite3 libsqlite3-0 \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=bridge-builder /usr/local/bin/whatsapp-bridge /usr/local/bin/
+COPY --from=mcp-builder /app /app
+VOLUME ["/data/store"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,0 +1,8 @@
+praisonaiagents[llm,mcp]
+gradio
+Flask
+requests
+google-genai
+google-generativeai
+Flask[async]>=2.0
+httpx[http2]

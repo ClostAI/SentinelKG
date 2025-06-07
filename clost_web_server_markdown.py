@@ -4,20 +4,27 @@ import re
 import asyncio
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from sse_starlette.sse import EventSourceResponse
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationSummaryBufferMemory
 from langchain.schema import HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
+from pydantic import BaseModel
+from typing import List
 from nexra.src.tools import response_tool
 from runner import initialize_kg, query_kg
 from pymongo import MongoClient
 from router_llm import route_query
 from typing import List
 from fastapi import FastAPI, Query, Body
-
+from fastapi.responses import StreamingResponse, RedirectResponse
+import subprocess
+import threading
+import time
+import httpx
 
 load_dotenv()
 os.environ['GOOGLE_API_KEY'] = os.getenv("GEMINI_API_KEY")
@@ -37,38 +44,103 @@ session_data = {}
 # -----------------------------
 # Utility Functions and Setup
 # -----------------------------
+whatsapp_process = None
+qr_generated = False
+def run_whatsapp_client():
+    global whatsapp_process, qr_generated
+    try:
+        # Run the Go WhatsApp client
+        process = subprocess.Popen(
+            ["./whatsapp-app"],  # Path to your compiled Go binary
+            cwd="./whatsapp-mcp-server",  # Directory containing the binary
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        whatsapp_process = process
+        
+        # Monitor output for QR generation
+        while True:
+            output = process.stdout.readline().decode()
+            if not output and process.poll() is not None:
+                break
+            if "QR code is available at" in output:
+                qr_generated = True
+                break
+                
+    except Exception as e:
+        print(f"Error running WhatsApp client: {e}")
 
-def get_session(session_id: str = None) -> tuple[str, ConversationBufferMemory]:
-    """Create or retrieve session with isolated memory from MongoDB."""
+
+def get_session(session_id: str = None) -> tuple[str, ConversationSummaryBufferMemory]:
+    """Create or retrieve session with summary buffer memory."""
     if session_id:
         doc = memory_collection.find_one({"_id": session_id})
         if doc:
-            #memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-            memory = ConversationBufferMemory(
+            memory = ConversationSummaryBufferMemory(
                 memory_key="chat_history",
-                input_key="query",      # only store inputs under 'query'
-                output_key="text",      # only store outputs under 'text'
-                return_messages=True
+                return_messages=True,
+                llm=ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.1),
+                max_token_limit=1000
             )
+            # Load stored messages
             stored_history = doc.get("chat_history", [])
             for message in stored_history:
-                role = message.get("role")
-                content = message.get("content")
-                if role == "human":
-                    memory.chat_memory.add_user_message(content)
-                elif role == "ai":
-                    memory.chat_memory.add_ai_message(content)
+                if message["role"] == "human":
+                    memory.chat_memory.add_user_message(message["content"])
+                elif message["role"] == "ai":
+                    memory.chat_memory.add_ai_message(message["content"])
+            
+            # Load summary if exists
+            if "summary" in doc:
+                memory.moving_summary_buffer = doc["summary"]
+                
             return session_id, memory
-    # Create new session if not found or new
-    #memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-    memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            input_key="query",      # only store inputs under 'query'
-            output_key="text",      # only store outputs under 'text'
-            return_messages=True
-        )
-    memory_collection.insert_one({"_id": session_id, "chat_history": []})
+    
+    # Create new session
+    memory = ConversationSummaryBufferMemory(
+        memory_key="chat_history",
+        return_messages=True,
+        llm=ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.1),
+        max_token_limit=1000
+    )
+    memory_collection.insert_one({
+        "_id": session_id, 
+        "chat_history": [], 
+        "summary": ""
+    })
     return session_id, memory
+
+# def get_session(session_id: str = None) -> tuple[str, ConversationBufferMemory]:
+#     """Create or retrieve session with isolated memory from MongoDB."""
+#     if session_id:
+#         doc = memory_collection.find_one({"_id": session_id})
+#         if doc:
+#             #memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+#             memory = ConversationBufferMemory(
+#                 memory_key="chat_history",
+#                 input_key="query",      # only store inputs under 'query'
+#                 output_key="text",      # only store outputs under 'text'
+#                 return_messages=True
+#             )
+#             stored_history = doc.get("chat_history", [])
+#             for message in stored_history:
+#                 role = message.get("role")
+#                 content = message.get("content")
+#                 if role == "human":
+#                     memory.chat_memory.add_user_message(content)
+#                 elif role == "ai":
+#                     memory.chat_memory.add_ai_message(content)
+#             return session_id, memory
+#     # Create new session if not found or new
+#     #memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+#     memory = ConversationBufferMemory(
+#             memory_key="chat_history",
+#             input_key="query",      # only store inputs under 'query'
+#             output_key="text",      # only store outputs under 'text'
+#             return_messages=True
+#         )
+#     memory_collection.insert_one({"_id": session_id, "chat_history": []})
+#     return session_id, memory
 
 def format_chat_history(chat_history):
     """Convert list of messages to a formatted string."""
@@ -190,32 +262,69 @@ def format_sse(data: dict, event: str = "new_message", id: str = None):
         "id": id
     }
 
-async def query_stream_generator(session_id, user_input, bot,top_k):
+# async def query_stream_generator(session_id, user_input, bot,top_k):
+#     sid, memory = get_session(session_id)
+#     chat_chain = LLMChain(llm=llm, prompt=chat_prompt, memory=memory)
+#     hist = format_chat_history(memory.load_memory_variables({})["chat_history"])
+#     response = await route_query(user_input)
+#     message = format_sse(data=response)
+#     yield message
+#     chat_memory = memory.chat_memory.messages
+#     history_to_store = []
+#     for msg in chat_memory:
+#         if isinstance(msg, HumanMessage):
+#             history_to_store.append({"role": "human", "content": msg.content})
+#         elif isinstance(msg, AIMessage):
+#             history_to_store.append({"role": "ai", "content": msg.content}) 
+
+#     memory_collection.update_one(
+#                 {"_id": session_id},
+#                 {
+#                     "$set": {
+#                         "_id": session_id,
+#                         "chat_history": history_to_store
+#                     }
+#                 },
+#                 upsert=True
+#             )
+
+async def query_stream_generator(session_id, user_input, bot, top_k):
     sid, memory = get_session(session_id)
-    chat_chain = LLMChain(llm=llm, prompt=chat_prompt, memory=memory)
-    hist = format_chat_history(memory.load_memory_variables({})["chat_history"])
-    response = await route_query(user_input)
+    
+    # Add current message to memory
+    memory.chat_memory.add_user_message(user_input)
+    
+    # Get formatted history
+    history = memory.load_memory_variables({})["chat_history"]
+    
+    # Pass conversation history to route_query
+    response = await route_query(user_input, conversation_history=history)
+    
+    # Add AI response to memory
+    memory.chat_memory.add_ai_message(response)
+    
+    # Prepare SSE response
     message = format_sse(data=response)
     yield message
-    chat_memory = memory.chat_memory.messages
-    history_to_store = []
-    for msg in chat_memory:
+    
+    # Save updated memory to MongoDB
+    stored_messages = []
+    for msg in memory.chat_memory.messages:
         if isinstance(msg, HumanMessage):
-            history_to_store.append({"role": "human", "content": msg.content})
+            stored_messages.append({"role": "human", "content": msg.content})
         elif isinstance(msg, AIMessage):
-            history_to_store.append({"role": "ai", "content": msg.content}) 
-
+            stored_messages.append({"role": "ai", "content": msg.content})
+    
     memory_collection.update_one(
-                {"_id": session_id},
-                {
-                    "$set": {
-                        "_id": session_id,
-                        "chat_history": history_to_store
-                    }
-                },
-                upsert=True
-            )
-
+        {"_id": session_id},
+        {
+            "$set": {
+                "chat_history": stored_messages,
+                "summary": memory.moving_summary_buffer  # Use correct attribute
+            }
+        },
+        upsert=True
+    )
 
 # -----------------------------
 # FastAPI Setup
@@ -231,21 +340,66 @@ async def sse_query(
 ):
     return EventSourceResponse(query_stream_generator(session_id, query, bot,top_k))
 
+@app.get("/whatsapp/start")
+async def start_whatsapp():
+    global whatsapp_process, qr_generated
+    
+    # Start WhatsApp client in background thread if not already running
+    if whatsapp_process is None or whatsapp_process.poll() is not None:
+        qr_generated = False
+        thread = threading.Thread(target=run_whatsapp_client)
+        thread.daemon = True
+        thread.start()
+        
+        # Wait for QR generation
+        start_time = time.time()
+        while not qr_generated and time.time() - start_time < 30:  # 30s timeout
+            time.sleep(0.5)
+    
+    if qr_generated:
+        # Return QR code from Go server
+        return RedirectResponse(url="http://localhost:5000/qr")
+    else:
+        return {"status": "error", "message": "QR generation timed out"}
 
-@app.get("/initialize")
-async def initialize_system():
-    """
-    Initialize KG system with data files
-    """
-    file_paths = [
-            "/app/SarposhFoods/instagram.json",
-            "/app/SarposhFoods/videos.json",
-            "/app/SarposhFoods/crawl_output.txt",
-            "/app/SarposhFoods/2307.09288.pdf",
-            "/app/SarposhFoods/1687-6180-2014-45.pdf"
-    ]
-    result = initialize_kg(file_paths)
-    return result
+
+@app.get("/whatsapp/status")
+async def whatsapp_status():
+    # Check if WhatsApp client is running
+    if whatsapp_process and whatsapp_process.poll() is None:
+        return {"status": "running"}
+    return {"status": "stopped"}
+
+class InitializeRequest(BaseModel):
+    urls: List[str]
+
+
+@app.post("/initialize")
+async def initialize(body: InitializeRequest):
+    urls = body.urls
+    if not urls:
+            raise HTTPException(status_code=400, detail="`urls` list cannot be empty")
+    else:
+        result = await initialize_kg(urls)
+        return result
+
+    return {"status": "initialized", "received": urls}
+
+
+# @app.get("/initialize")
+# async def initialize_system():
+#     """
+#     Initialize KG system with data files
+#     """
+#     file_paths = [
+#             "/app/SarposhFoods/instagram.json",
+#             "/app/SarposhFoods/videos.json",
+#             "/app/SarposhFoods/crawl_output.txt",
+#             "/app/SarposhFoods/2307.09288.pdf",
+#             "/app/SarposhFoods/1687-6180-2014-45.pdf"
+#     ]
+#     result = initialize_kg(file_paths)
+#     return result
 
 
 if __name__ == "__main__":

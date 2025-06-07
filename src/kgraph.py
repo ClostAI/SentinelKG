@@ -562,6 +562,8 @@ class KnowledgeGraphSystem:
     def initialize(self, file_paths: List[str]):
         if self.initialized:
             return {"status": "already_initialized"}
+    
+        print("Initializing models...")
         nltk.download('punkt', quiet=True)
         initialize_models()
         self.text_client, self.image_client = initialize_weaviate()
@@ -584,6 +586,7 @@ class KnowledgeGraphSystem:
         
         top_images = retrieve_image_top_k(query, self.image_client)
         top_texts = retrieve_text_top_k(query, self.text_client)
+        print("TOP_TEXTS", top_texts)
         processed_images = []
         for img in top_images:
             if isinstance(img, Image.Image):

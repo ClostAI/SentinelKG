@@ -48,7 +48,7 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code to the container
 RUN pip install -q -U google-generativeai
 COPY . .
-
+RUN export EXCEL_FILES_PATH=/home/drovco/SentinelKG/User && echo $EXCEL_FILES_PATH   ######UPDATE THIS
 # Expose port 8000
 EXPOSE 8000
 
