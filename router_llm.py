@@ -1619,7 +1619,8 @@ async def unified_tool_router(user_query: str, conversation_history: List) -> Di
     a JSON object with keys: tool_name, arguments, missing_args.
     """
     logger.info(f"Routing query: {user_query} with history: {len(conversation_history)} messages")
-    
+    print("=========================================================")
+    print(conversation_history)
     # Build messages including conversation history
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     

@@ -156,12 +156,14 @@ def get_txt_pdf_files(directory: str = "/app/User") -> List[str]:
     Returns:
         List[str]: List of full file paths ending with .txt or .pdf
     """
+    print("*******************Getting TXT/PDF Files********************")
     txt_pdf_files = []
     for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith(('.txt', '.pdf')):
                 full_path = os.path.join(root, file)
                 txt_pdf_files.append(full_path)
+    print("Fetched pdfs/text files:", txt_pdf_files)
     return txt_pdf_files
 
 async def initialize_kg(urls):
