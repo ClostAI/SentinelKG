@@ -300,7 +300,7 @@ def format_sse(data: dict, event: str = "new_message", id: str = None):
 
 async def query_stream_generator(session_id, user_input, bot, top_k):
     sid, memory = get_session(session_id)
-    
+    print("**&&Memory", memory)
     # Add current message to memory
     memory.chat_memory.add_user_message(user_input)
     
@@ -324,7 +324,6 @@ async def query_stream_generator(session_id, user_input, bot, top_k):
             stored_messages.append({"role": "human", "content": msg.content})
         elif isinstance(msg, AIMessage):
             stored_messages.append({"role": "ai", "content": msg.content})
-    
     memory_collection.update_one(
         {"_id": session_id},
         {
@@ -351,6 +350,8 @@ async def sse_query(
     raw: bool = Query(False, description="if true, return raw response without SSE framing")
 ):
     # Generate your LLM response just once, not as SSE
+    print("=======================")
+    print(session_id)
     sid, memory = get_session(session_id)
     memory.chat_memory.add_user_message(query)
     history = memory.load_memory_variables({})["chat_history"]
@@ -358,6 +359,23 @@ async def sse_query(
     memory.chat_memory.add_ai_message(response)
     # persist memory back to MongoDB…
     # (same as in your SSE generator)
+    stored_messages = []
+    for msg in memory.chat_memory.messages:
+        if isinstance(msg, HumanMessage):
+            stored_messages.append({"role": "human", "content": msg.content})
+        elif isinstance(msg, AIMessage):
+            stored_messages.append({"role": "ai", "content": msg.content})
+
+    memory_collection.update_one(
+        {"_id": session_id},
+        {
+            "$set": {
+                "chat_history": stored_messages,
+                "summary": memory.moving_summary_buffer  # Use correct attribute
+            }
+        },
+        upsert=True
+    )
     return PlainTextResponse(response)
 
     # otherwise fall back to SSE
