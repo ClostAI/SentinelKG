@@ -1,0 +1,4 @@
+stream.clost.in {
+        reverse_proxy fastapi:8000
+    }
+
