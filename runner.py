@@ -201,6 +201,9 @@ def query_kg(query):
 # curl -N "http://localhost:8000/stream?query=hello&bot=agni&top_k=5&session_id=test123"
 #wget http://localhost:8000/initialize   ########NOTE THIS TO BE RUN BEFORE KG 
 #wget http://localhost:8000/whatsapp/start
+#ssh -i ~/.ssh/clost_infra clostinfra@34.123.179.207
+#curl -i -H "Accept: application/json" http://localhost:8000/whatsapp/start #####Whatsapp start
+
 #docker image prune --all -f
 #sudo docker rm -f $(sudo docker ps -aq)
 # sudo docker ps -a
