@@ -154,6 +154,60 @@ def get_message_context(
     context = whatsapp_get_message_context(message_id, before, after)
     return context
 
+import re
+from typing import Dict, Any,Union
+
+def format_single_booking(booking: dict) -> str:
+    """Format individual booking dictionary"""
+    if not isinstance(booking, dict):
+        return str(booking)
+    
+    lines = []
+    for key, value in booking.items():
+        display_value = "N/A" if value is None else str(value)
+        lines.append(f"• *{key}*: {display_value}")
+    
+    return "\n".join(lines)
+
+def format_booking_list(bookings: list) -> str:
+    """Format list of bookings with numbering"""
+    if not bookings:
+        return "No bookings found"
+    
+    # Single booking - no numbering needed
+    if len(bookings) == 1:
+        return format_single_booking(bookings[0])
+    
+    # Multiple bookings
+    results = []
+    for i, booking in enumerate(bookings, 1):
+        results.append(f"*Booking #{i}*")
+        results.append(format_single_booking(booking))
+        results.append("")  # Spacer between bookings
+    
+    return "\n".join(results)
+
+def format_booking_data(data: Union[list, dict]) -> str:
+    """Convert booking data into WhatsApp-friendly format"""
+    if isinstance(data, list):
+        return format_booking_list(data)
+    elif isinstance(data, dict):
+        return format_single_booking(data)
+    return str(data)  # Fallback for other types
+
+def parse_and_format_message(input_str: str) -> str:
+    """Detect and format JSON booking data or return plain text"""
+    # Handle plain text messages immediately
+    if not input_str.startswith(("[", "{")) or not input_str.endswith(("]", "}")):
+        return input_str
+
+    try:
+        data = json.loads(input_str)
+        return format_booking_data(data)
+    except json.JSONDecodeError:
+        return input_str  # Return original if invalid JSON
+
+
 @mcp.tool()
 def send_message(
     recipient: str,
@@ -175,13 +229,20 @@ def send_message(
             "success": False,
             "message": "Recipient must be provided"
         }
+    try:
+        # Convert markdown to WhatsApp formatting
+        formatted_message = parse_and_format_message(message)
+    except Exception as e:
+        formatted_message = message  # Fallback to original on error
+    success, status_message = whatsapp_send_message(recipient, formatted_message)
+    return {"success": success, "message": status_message}
     
-    # Call the whatsapp_send_message function with the unified recipient parameter
-    success, status_message = whatsapp_send_message(recipient, message)
-    return {
-        "success": success,
-        "message": status_message
-    }
+    # # Call the whatsapp_send_message function with the unified recipient parameter
+    # success, status_message = whatsapp_send_message(recipient, message)
+    # return {
+    #     "success": success,
+    #     "message": status_message
+    # }
 
 @mcp.tool()
 def send_file(recipient: str, media_path: str) -> Dict[str, Any]:
