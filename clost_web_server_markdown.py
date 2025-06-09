@@ -4,6 +4,7 @@ import re
 import asyncio
 import os
 from dotenv import load_dotenv
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi import FastAPI, Query, HTTPException
 from sse_starlette.sse import EventSourceResponse
 from langchain.chains import LLMChain
@@ -46,13 +47,22 @@ session_data = {}
 # -----------------------------
 whatsapp_process = None
 qr_generated = False
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+GO_BINARY_PATH = BASE_DIR / "whatsapp-mcp-server" / "whatsapp-bridge"
 def run_whatsapp_client():
     global whatsapp_process, qr_generated
+    if not GO_BINARY_PATH.exists():
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": "WhatsApp binary not found"}
+        )
     try:
         # Run the Go WhatsApp client
         process = subprocess.Popen(
-            ["./whatsapp-app"],  # Path to your compiled Go binary
-            cwd="./whatsapp-mcp-server",  # Directory containing the binary
+            [str(GO_BINARY_PATH)],  # Use absolute path
+            cwd=str(BASE_DIR / "whatsapp-bridge"),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
@@ -330,37 +340,89 @@ async def query_stream_generator(session_id, user_input, bot, top_k):
 # FastAPI Setup
 # -----------------------------
 app = FastAPI()
+from fastapi.responses import PlainTextResponse
 
 @app.get("/stream")
 async def sse_query(
     query: str = Query(...),
     bot: str = Query(...),
-    top_k:    int = Query(5),
-    session_id: str = Query(None)
+    top_k: int = Query(5),
+    session_id: str = Query(None),
+    raw: bool = Query(False, description="if true, return raw response without SSE framing")
 ):
-    return EventSourceResponse(query_stream_generator(session_id, query, bot,top_k))
+    # Generate your LLM response just once, not as SSE
+    sid, memory = get_session(session_id)
+    memory.chat_memory.add_user_message(query)
+    history = memory.load_memory_variables({})["chat_history"]
+    response = await route_query(query, conversation_history=history)
+    memory.chat_memory.add_ai_message(response)
+    # persist memory back to MongoDB…
+    # (same as in your SSE generator)
+    return PlainTextResponse(response)
+
+    # otherwise fall back to SSE
+    #return EventSourceResponse(query_stream_generator(session_id, query, bot, top_k))
+
+
+
+# @app.get("/stream")
+# async def sse_query(
+#     query: str = Query(...),
+#     bot: str = Query(...),
+#     top_k:    int = Query(5),
+#     session_id: str = Query(None)
+# ):
+#     return EventSourceResponse(query_stream_generator(session_id, query, bot,top_k))
+
+# @app.get("/whatsapp/start")
+# async def start_whatsapp():
+#     global whatsapp_process, qr_generated
+    
+#     # Start WhatsApp client in background thread if not already running
+#     if whatsapp_process is None or whatsapp_process.poll() is not None:
+#         qr_generated = False
+#         thread = threading.Thread(target=run_whatsapp_client)
+#         thread.daemon = True
+#         thread.start()
+        
+#         # Wait for QR generation
+#         start_time = time.time()
+#         while not qr_generated and time.time() - start_time < 30:  # 30s timeout
+#             time.sleep(0.5)
+    
+#     if qr_generated:
+#         # Return QR code from Go server
+#         return RedirectResponse(url="http://localhost:5000/qr")
+#     else:
+#         return {"status": "error", "message": "QR generation timed out"}
+
 
 @app.get("/whatsapp/start")
 async def start_whatsapp():
-    global whatsapp_process, qr_generated
+    global whatsapp_process, qr_ready
     
-    # Start WhatsApp client in background thread if not already running
-    if whatsapp_process is None or whatsapp_process.poll() is not None:
-        qr_generated = False
-        thread = threading.Thread(target=run_whatsapp_client)
-        thread.daemon = True
-        thread.start()
-        
-        # Wait for QR generation
-        start_time = time.time()
-        while not qr_generated and time.time() - start_time < 30:  # 30s timeout
-            time.sleep(0.5)
+    # Check if process is already running
+    if whatsapp_process and whatsapp_process.poll() is None:
+        if qr_ready:
+            return RedirectResponse(url="http://localhost:5000/qr")
+        return JSONResponse(
+            content={"status": "running", "message": "Client is running but QR not ready yet"},
+            status_code=200
+        )
     
-    if qr_generated:
-        # Return QR code from Go server
+    qr_ready = False
+    threading.Thread(target=run_whatsapp_client, daemon=True).start()
+    start = time.time()
+    while not qr_ready and time.time() - start < 15:
+        time.sleep(0.2)
+    
+    if qr_ready:
         return RedirectResponse(url="http://localhost:5000/qr")
     else:
-        return {"status": "error", "message": "QR generation timed out"}
+        return JSONResponse(
+            content={"status": "starting", "message": "Client started - QR may appear later at http://localhost:5000/qr"},
+            status_code=202
+        )
 
 
 @app.get("/whatsapp/status")
