@@ -7,11 +7,11 @@ services:
       dockerfile: Dockerfile.whatsapp-mcp
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - NAME="Sarpoosh FOODs"  ####CHANGE THIS
+      - NAME="Sarpoosh FOODs"
     volumes:
       - whatsapp_store:/data/store
     ports:
-      - "3000:3000"  # Expose on different port
+      - "3000:3000"
     networks:
       - my-network
     tty: true
@@ -23,15 +23,14 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
-      - /home/drovco/SentinelKG/User:/app/User ####CHANGE THIS
+      - /home/clostinfra/clost/SentinelKG/User:/app/User
     environment:
-      - NAME="Sarpoosh FOODs"  ####CHANGE THIS
+      - NAME="Sarpoosh FOODs"
       - SEARXNG_URL=http://searxng:8080
       - MONGO_URL=mongodb://mongodb:27017
       - WEAVIATE_HOST=weaviate
       - WEAVIATE_PORT=8080
-      - NVIDIA_VISIBLE_DEVICES=all
-      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+      # GPU/CUDA settings removed for CPU-only operation
     depends_on:
       - searxng
       - mongodb
@@ -41,13 +40,6 @@ services:
       - transformers
     networks:
       - my-network
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
   searxng:
     image: searxng/searxng:latest
@@ -115,17 +107,10 @@ services:
   transformers:
     image: semitechnologies/transformers-inference:sentence-transformers-multi-qa-mpnet-base-cos-v1
     environment:
-      - ENABLE_CUDA=true
-      - NVIDIA_VISIBLE_DEVICES=all
+      - ENABLE_CUDA=false   # run on CPU
     networks:
       - my-network
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+
   caddy:
     image: caddy:latest
     ports:
@@ -145,7 +130,10 @@ volumes:
   weaviate_text_data:
   weaviate_image_data:
   whatsapp_store:
+  caddy_data:
+  caddy_config:
 
 networks:
   my-network:
     driver: bridge
+
