@@ -1368,7 +1368,9 @@ async def read_data_from_excel(
             filtered_data = apply_filters(data, filter_criteria, context)
         else:
             filtered_data = data
-
+        print("+++++++++++++++++++++++++++++++=")
+        print(json.dumps(filtered_data))
+        print("+++++++++++++++++++++++++++++++=")
         return json.dumps(filtered_data)
     except Exception as e:
         logger.error(f"Error reading Excel file: {str(e)}")
