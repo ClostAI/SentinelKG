@@ -168,7 +168,7 @@ def get_txt_pdf_files(directory: str = "/app/User") -> List[str]:
 
 async def initialize_kg(urls):
     file_paths = []
-    kg_system = KnowledgeGraphSystem()
+    #kg_system = KnowledgeGraphSystem()
     buckets = segregate_urls(urls)
     indx = 1
     inst = False
@@ -176,7 +176,7 @@ async def initialize_kg(urls):
     file_paths = file_paths + get_txt_pdf_files("/app/User")
     for web in buckets["websites"]:
       await scrape_webpage(web, "/app/User", f"crawl_output_{indx}.txt")
-      file_paths.append("/app/User/crawl_output_{indx}.txt")
+      file_paths.append(f"/app/User/crawl_output_{indx}.txt")
     if buckets["youtube"]:
       video_ids = extract_youtube_ids(urls)
       get_video_details(video_ids, "/app/User", "videos.json")

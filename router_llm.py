@@ -1626,10 +1626,15 @@ async def unified_tool_router(user_query: str, conversation_history: List) -> Di
     
     # Add conversation history
     for msg in conversation_history:
+        raw = msg.content
+        if isinstance(raw, list):
+            content = "".join(raw)
+        else:
+            content = raw
         if isinstance(msg, HumanMessage):
-            messages.append({"role": "user", "content": msg.content})
+            messages.append({"role": "user", "content": content})
         elif isinstance(msg, AIMessage):
-            messages.append({"role": "assistant", "content": msg.content})
+            messages.append({"role": "assistant", "content": content})
     
     # Add current user query
     messages.append({"role": "user", "content": user_query})
@@ -1682,6 +1687,9 @@ async def query_stream_generator(user_input: str, conversation_history: List) ->
     Accept a user query, route it, handle missing arguments, and execute the tool.
     """
     route_result = await unified_tool_router(user_input, conversation_history)
+    print("**************************************")
+    print("ROutE RESUlt", route_result)
+    print("***************************************")
     tool_name = route_result["tool_name"]
     arguments = route_result["arguments"]
     missing_args = route_result["missing_args"]
