@@ -350,13 +350,21 @@ async def sse_query(
     raw: bool = Query(False, description="if true, return raw response without SSE framing")
 ):
     # Generate your LLM response just once, not as SSE
-    print("=======================")
-    print(session_id)
     sid, memory = get_session(session_id)
     memory.chat_memory.add_user_message(query)
     history = memory.load_memory_variables({})["chat_history"]
-    response = await route_query(query, conversation_history=history)
-    memory.chat_memory.add_ai_message(response)
+    raw_response = await route_query(query, conversation_history=history)
+    print("PRINTING RESPONSE===============================")
+    print(raw_response)
+    print("============================")
+    if isinstance(raw_response, list):
+        response_text = "".join(raw_response)
+    elif isinstance(raw_response, dict):
+        response_text = raw_response.get("content", json.dumps(raw_response))
+    else:
+        response_text = str(raw_response)
+
+    memory.chat_memory.add_ai_message(response_text)
     # persist memory back to MongoDB…
     # (same as in your SSE generator)
     stored_messages = []
@@ -376,7 +384,7 @@ async def sse_query(
         },
         upsert=True
     )
-    return PlainTextResponse(response)
+    return PlainTextResponse(response_text)
 
     # otherwise fall back to SSE
     #return EventSourceResponse(query_stream_generator(session_id, query, bot, top_k))
