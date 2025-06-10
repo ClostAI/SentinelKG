@@ -423,32 +423,57 @@ async def sse_query(
 #         return {"status": "error", "message": "QR generation timed out"}
 
 
+import os
+#import docker
+import subprocess
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse, RedirectResponse
+import subprocess
+import threading
+COMPOSE_DIR = "/app"
+def run_compose_up():
+    cmd = ["docker-compose",  "up",  "whatsapp-mcp"]
+    try:
+        result = subprocess.run(cmd, cwd=COMPOSE_DIR, capture_output=True, text=True, timeout=120)
+        print(result)
+        if result.returncode != 0:
+            print("Compose up failed:", result.stderr)
+    except Exception as e:
+        print("Error running compose up:", e)
+
 @app.get("/whatsapp/start")
 async def start_whatsapp():
-    global whatsapp_process, qr_ready
+    threading.Thread(target=run_compose_up, daemon=True).start()
+    return JSONResponse({"status": "starting"}, status_code=202)
+
+
+
+#@app.get("/whatsapp/start")COMPOSE_DIR =
+#async def start_whatsapp():
+#    global whatsapp_process, qr_ready
     
     # Check if process is already running
-    if whatsapp_process and whatsapp_process.poll() is None:
-        if qr_ready:
-            return RedirectResponse(url="http://localhost:5000/qr")
-        return JSONResponse(
-            content={"status": "running", "message": "Client is running but QR not ready yet"},
-            status_code=200
-        )
+#    if whatsapp_process and whatsapp_process.poll() is None:
+#        if qr_ready:
+#            return RedirectResponse(url="http://localhost:5000/qr")
+#        return JSONResponse(
+#            content={"status": "running", "message": "Client is running but QR not ready yet"},
+#            status_code=200
+#        )
     
-    qr_ready = False
-    threading.Thread(target=run_whatsapp_client, daemon=True).start()
-    start = time.time()
-    while not qr_ready and time.time() - start < 15:
-        time.sleep(0.2)
+#    qr_ready = False
+#    threading.Thread(target=run_whatsapp_client, daemon=True).start()
+#    start = time.time()
+#    while not qr_ready and time.time() - start < 15:
+#        time.sleep(0.2)
     
-    if qr_ready:
-        return RedirectResponse(url="http://localhost:5000/qr")
-    else:
-        return JSONResponse(
-            content={"status": "starting", "message": "Client started - QR may appear later at http://localhost:5000/qr"},
-            status_code=202
-        )
+#    if qr_ready:
+#        return RedirectResponse(url="http://localhost:5000/qr")
+#    else:
+#        return JSONResponse(
+#            content={"status": "starting", "message": "Client started - QR may appear later at http://localhost:5000/qr"},
+#            status_code=202
+#        )
 
 
 @app.get("/whatsapp/status")

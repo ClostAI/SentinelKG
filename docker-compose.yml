@@ -2,6 +2,7 @@ version: "3.8"
 
 services:
   whatsapp-mcp:
+    profiles: ["manual-start"]
     build:
       context: .
       dockerfile: Dockerfile.whatsapp-mcp
@@ -16,7 +17,6 @@ services:
       - my-network
     tty: true
     stdin_open: true
-
   fastapi:
     build: .
     ports:
@@ -24,6 +24,8 @@ services:
     volumes:
       - .:/app
       - /home/clostinfra/clost/SentinelKG/User:/app/User
+      - /var/run/docker.sock:/var/run/docker.sock
+
     environment:
       - NAME="Sarpoosh FOODs"
       - SEARXNG_URL=http://searxng:8080

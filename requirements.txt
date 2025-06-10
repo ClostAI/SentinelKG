@@ -10,6 +10,7 @@ asyncio==3.4.3
 beautifulsoup4
 colorama
 lxml
+docker 
 openpyxl
 # Google AI/Cloud
 Crawl4AI==0.6.3
