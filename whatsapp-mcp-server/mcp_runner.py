@@ -175,7 +175,7 @@ def handle_message():
         }
         print("MESSAGE", message)
 
-        resp = requests.get(url, params=params, stream=True, timeout=10)
+        resp = requests.get(url, params=params, stream=True, timeout=90)
         # If it fails to connect, requests will raise an exception here
         resp.raise_for_status()
 
