@@ -80,7 +80,9 @@ def initialize_weaviate() -> tuple[Client, Client]:
     # image_client = weaviate.Client("http://localhost:8081")
     text_client = weaviate.Client("http://weaviate-text:8080")
     image_client = weaviate.Client("http://weaviate-image:8080")
-
+    for client, class_name in [(text_client, "TextChunk"), (image_client, "ImageChunk")]:
+        if client.schema.exists(class_name):
+            client.schema.delete_class(class_name)
     #THIS IS TO UNCOMMENTED IF THERE"S WEVIATE ERROR
     # Clear existing classes if needed
     # for client, class_name in [(text_client, "TextChunk"), (image_client, "ImageChunk")]:
@@ -351,6 +353,20 @@ def retrieve_image_top_k(query: str, client: Client, k: int = TOP_K) -> List[Ima
     Returns an empty list if no matches or on error.
     """
     # 1) Build the query embedding
+    print("%%%%%%%%%%% Entered image rerieval codebase......")
+    try:
+        agg = (
+            client.query
+                  .aggregate("ImageChunk")
+                  .with_meta_count()
+                  .do()
+        )
+        total = agg["data"]["Aggregate"]["ImageChunk"][0]["meta"]["count"]
+    except Exception:
+        total = 0
+
+    if total == 0:
+        return []
     q_batch = colqwen_processor.process_queries([query]).to(device)
     with torch.no_grad():
         outputs = colqwen_model(**q_batch)
@@ -396,6 +412,21 @@ def retrieve_image_top_k(query: str, client: Client, k: int = TOP_K) -> List[Ima
 
 def retrieve_text_top_k(query: str, client: Client, k: int = TOP_K) -> List[dict]:
     """Retrieve text using Jina query embedding"""
+    try:
+        agg = (
+            client.query
+                  .aggregate("TextChunk")
+                  .with_meta_count()
+                  .do()
+        )
+        print("@@@@@@@@@@@@@ agg", agg)
+        total = agg["data"]["Aggregate"]["TextChunk"][0]["meta"]["count"]
+    except Exception:
+        total = 0
+
+    if total == 0:
+        # nothing in the database
+        return []
     inputs = jina_tokenizer(
         query,
         padding=True,
@@ -440,7 +471,7 @@ def summarize_with_gpt(query: str, text_results: List[dict], image_results: List
     # Prepare images
     image_content = [{
         "type": "image_url",
-        "image_url": {"url": f"data:image/jpeg;base64,{encode_image_to_base64(img)}"}
+        "image_url": {"url": f"data:image/Ijpeg;base64,{encode_image_to_base64(img)}"}
     } for img in image_results]
 
     messages = [
@@ -581,12 +612,21 @@ class KnowledgeGraphSystem:
         return {"status": "initialized"}
 
     def query(self, query: str) -> str:
+        # 1) Initialization check returns a string
         if not self.initialized:
-            return {"error": "System not initialized. Call /initialize first"}
-        
-        top_images = retrieve_image_top_k(query, self.image_client)
-        top_texts = retrieve_text_top_k(query, self.text_client)
-        print("TOP_TEXTS", top_texts)
+            return "Error: System not initialized. Call /initialize first."
+        print("%%%%%%%%%%%%%%%%Retrieving top k images and texts")
+        # 2) Retrieve tools and normalize to lists
+        top_images = retrieve_image_top_k(query, self.image_client) or []
+        top_texts  = retrieve_text_top_k(query, self.text_client) or []
+
+        print("%%%%%%%%%%%%%%%%Content retrieved")
+
+        # 3) Short-circuit if both empty
+        if not top_images and not top_texts:
+            return "No relevant text or images were found for your query."
+
+        # 4) Process images as before
         processed_images = []
         for img in top_images:
             if isinstance(img, Image.Image):
@@ -600,4 +640,6 @@ class KnowledgeGraphSystem:
                 img = (img * 255).clip(0, 255).astype(np.uint8)
                 img = Image.fromarray(img)
             processed_images.append(img)
+
+        # 5) Delegate to summarizer (which now safely handles empty lists)
         return summarize_with_gpt(query, top_texts, processed_images)
