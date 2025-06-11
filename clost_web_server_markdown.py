@@ -430,21 +430,80 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 import subprocess
 import threading
-COMPOSE_DIR = "/app"
+import subprocess, threading
+from fastapi.responses import JSONResponse
+
+COMPOSE_DIR = "/app"   # set this to the folder containing your docker-compose.yml
+
 def run_compose_up():
-    cmd = ["docker-compose",  "up",  "whatsapp-mcp"]
+    # cmd = [
+    #     "docker-compose",
+    #     "up", "-d",
+    #     "whatsapp-mcp"
+    # ]
+    cmd = [
+        "docker-compose",
+        "-f", "/app/docker-compose.yml",  # wherever your file lives in-container
+        "up", "-d",
+        "--no-deps",                      # don’t start its dependencies
+        "whatsapp-mcp"
+    ]
     try:
-        result = subprocess.run(cmd, cwd=COMPOSE_DIR, capture_output=True, text=True, timeout=120)
-        print(result)
+        result = subprocess.run(
+            cmd,
+            cwd=COMPOSE_DIR,
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
         if result.returncode != 0:
             print("Compose up failed:", result.stderr)
+        else:
+            print("Compose up succeeded:", result.stdout)
     except Exception as e:
         print("Error running compose up:", e)
+    
+    try:
+        connect_cmd = [
+                "docker", "network", "connect",
+                "sentinelkg1_my-network",
+                "app-whatsapp-mcp-1"
+            ]
+        connect_result = subprocess.run(
+            connect_cmd,
+            capture_output=True,
+            text=True
+        )
+        if connect_result.returncode != 0:
+            print("Network connect failed:", connect_result.stderr)
+        else:
+            print("Network connect succeeded:", connect_result.stdout)
+
+    except Exception as e:
+        print("Error connecting network:", e)
+    
+    
 
 @app.get("/whatsapp/start")
 async def start_whatsapp():
     threading.Thread(target=run_compose_up, daemon=True).start()
     return JSONResponse({"status": "starting"}, status_code=202)
+
+# COMPOSE_DIR = "/app"
+# def run_compose_up():
+#     cmd = ["docker-compose",  "up",  "whatsapp-mcp"]
+#     try:
+#         result = subprocess.run(cmd, cwd=COMPOSE_DIR, capture_output=True, text=True, timeout=120)
+#         print(result)
+#         if result.returncode != 0:
+#             print("Compose up failed:", result.stderr)
+#     except Exception as e:
+#         print("Error running compose up:", e)
+
+# @app.get("/whatsapp/start")
+# async def start_whatsapp():
+#     threading.Thread(target=run_compose_up, daemon=True).start()
+#     return JSONResponse({"status": "starting"}, status_code=202)
 
 
 
