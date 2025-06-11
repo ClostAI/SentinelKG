@@ -164,9 +164,11 @@ def handle_message():
 
     if not message or not sender:
         return jsonify(error="Missing message or sender"), 400
-
+    FASTAPI_HOST =  "sentinelkg1-fastapi"
+    FASTAPI_PORT ="8000"
     try:
-        url = "http://fastapi:8000/stream"
+        url = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/stream"
+        print("PRINTING URK", url)
         params = {
             "query": message,
             "bot": "agni",
@@ -190,6 +192,7 @@ def handle_message():
 
     except Exception as e:
         # Log the full exception to stdout (so you see it in Docker logs)
+        print("PRINTING URK2", url)
         print("⛔ ERROR FETCHING STREAM:", repr(e))
         return jsonify(error=str(e)), 500
 
