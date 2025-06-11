@@ -14,3 +14,6 @@ curl -X POST http://localhost:8000/initialize\
              "https://sarposhfoods.com"
            ]
          }'
+
+## Call from chat
+curl -N "http://localhost:8000/stream?query=hello&bot=agni&top_k=5&session_id=test123"
