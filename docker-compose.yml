@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.9"
 
 services:
   whatsapp-mcp:
@@ -9,6 +9,10 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - NAME="Sarpoosh FOODs"
+      - FASTAPI_HOST=fastapi        # ← point at the fastapi service
+      - FASTAPI_PORT=8000
+    depends_on:
+      - fastapi   
     volumes:
       - whatsapp_store:/data/store
     ports:
@@ -17,8 +21,10 @@ services:
       - my-network
     tty: true
     stdin_open: true
+  
   fastapi:
     build: .
+    user: root 
     ports:
       - "8000:8000"
     volumes:
